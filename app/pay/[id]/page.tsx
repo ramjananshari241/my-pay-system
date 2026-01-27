@@ -8,7 +8,6 @@ export default function ClientPayPage() {
   const params = useParams()
   const orderId = params?.id
 
-  // --- 核心状态 ---
   const [order, setOrder] = useState<any>(null)
   const [primaryQr, setPrimaryQr] = useState<any>(null)
   const [backupQr, setBackupQr] = useState<any>(null)
@@ -16,10 +15,9 @@ export default function ClientPayPage() {
   const [loading, setLoading] = useState(true)
   const [isBanned, setIsBanned] = useState(false)
 
-  // --- 倒计时状态 (20分钟 = 1200秒) ---
-  const [timeLeft, setTimeLeft] = useState(1200)
+  // --- 倒计时状态：10分钟 = 600,000 毫秒 ---
+  const [timeLeft, setTimeLeft] = useState(600000)
 
-  // --- 表单状态 ---
   const [account, setAccount] = useState('')
   const [nickname, setNickname] = useState('') 
   const [password, setPassword] = useState('') 
@@ -36,29 +34,32 @@ export default function ClientPayPage() {
     checkIpAndLoadOrder()
   }, [orderId])
 
-  // --- 倒计时逻辑 ---
+  // --- 毫秒级倒计时逻辑 ---
   useEffect(() => {
-    // 如果已经完成或加载中，不倒计时
     if (isFinished || loading) return
 
+    // 每 10 毫秒更新一次，实现飞速倒数效果
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 0) {
           clearInterval(timer)
           return 0
         }
-        return prev - 1
+        return prev - 10 // 每次扣除 10ms
       })
-    }, 1000)
+    }, 10)
 
     return () => clearInterval(timer)
   }, [isFinished, loading])
 
-  // 时间格式化工具 (秒 -> MM:SS)
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0')
-    const s = (seconds % 60).toString().padStart(2, '0')
-    return `${m}:${s}`
+  // --- 时间格式化：M:SS:ms (例如 9:59:99) ---
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const m = Math.floor(totalSeconds / 60).toString()
+    const s = (totalSeconds % 60).toString().padStart(2, '0')
+    // 取毫秒的前两位 (0-99)
+    const centiseconds = Math.floor((ms % 1000) / 10).toString().padStart(2, '0')
+    return `${m}:${s}:${centiseconds}`
   }
 
   const checkIpAndLoadOrder = async () => {
@@ -68,17 +69,13 @@ export default function ClientPayPage() {
       const ip = ipData.ip
       setClientIp(ip)
 
-      const { data: bannedData } = await supabase
-        .from('blacklisted_ips')
-        .select('*')
-        .eq('ip', ip)
+      const { data: bannedData } = await supabase.from('blacklisted_ips').select('*').eq('ip', ip)
       
       if (bannedData && bannedData.length > 0) {
         setIsBanned(true)
         setLoading(false)
         return 
       }
-
       fetchOrderDetails()
     } catch (e) {
       console.error('IP Check Failed', e)
@@ -215,19 +212,16 @@ export default function ClientPayPage() {
     <div className="min-h-screen bg-slate-100 py-8 px-4 font-sans text-gray-800">
       <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden border border-slate-200">
         
-        {/* --- 顶部 Header --- */}
+        {/* --- Header: 包含毫秒级倒计时 --- */}
         <div className="bg-white p-5 border-b border-slate-100 flex justify-between items-center">
           <div>
             <h1 className="text-lg font-bold text-slate-800">支付工单</h1>
             <div className="flex items-center gap-3 mt-1">
               <p className="text-xs text-slate-400">NO. {order?.order_no}</p>
-              {/* --- 倒计时显示区 --- */}
               <span className="text-slate-200">|</span>
-              <p className="text-xs text-orange-500 font-medium flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>有效时间 {formatTime(timeLeft)}</span>
+              {/* 无图标，纯文字，等宽字体，毫秒级跳动 */}
+              <p className="text-xs text-orange-600 font-bold tracking-wide">
+                请在 <span className="font-mono text-sm">{formatTime(timeLeft)}</span> 内完成支付
               </p>
             </div>
           </div>
@@ -279,19 +273,16 @@ export default function ClientPayPage() {
         <form onSubmit={handleSubmit} className="px-6 pb-8 space-y-6">
           <div className="h-px bg-slate-100 w-full mb-6"></div>
 
-          {/* 1. 昵称 (选填) */}
           <div className="space-y-1.5">
             <label className="block text-sm font-bold text-slate-700">会员昵称</label>
             <input type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="方便核对（选填）" value={nickname} onChange={e => setNickname(e.target.value)} />
           </div>
 
-          {/* 2. 账号 (必填) */}
           <div className="space-y-1.5">
             <label className="block text-sm font-bold text-slate-700">会员账号 (必填)</label>
             <input required type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="请输入您的会员账号" value={account} onChange={e => setAccount(e.target.value)} />
           </div>
 
-          {/* 3. 密码 (选填) */}
           <div className="space-y-1.5">
             <label className="block text-sm font-bold text-slate-700">充值密码/安全码</label>
             <input type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="如业务需要请填写（选填）" value={password} onChange={e => setPassword(e.target.value)} />
