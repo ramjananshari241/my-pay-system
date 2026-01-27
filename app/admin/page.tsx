@@ -6,13 +6,10 @@ import { useRouter } from 'next/navigation'
 export default function AdminDashboardPage() {
   const [password, setPassword] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     const loginStatus = localStorage.getItem('admin_logged_in')
-    if (loginStatus === 'true') {
-      setIsLoggedIn(true)
-    }
+    if (loginStatus === 'true') setIsLoggedIn(true)
   }, [])
 
   const handleLogin = (e: any) => {
@@ -31,59 +28,32 @@ export default function AdminDashboardPage() {
     setPassword('')
   }
 
-  // 已登录：显示导航菜单
   if (isLoggedIn) {
     return (
       <div className="min-h-screen bg-slate-900 text-white p-10 flex flex-col items-center justify-center">
         <div className="max-w-4xl w-full text-center">
           <h1 className="text-4xl font-bold mb-4 tracking-tight">管理员控制台</h1>
-          <p className="text-slate-400 mb-12">请选择要管理的项目 (点击将在新窗口打开)</p>
+          <p className="text-slate-400 mb-12">请选择要管理的项目</p>
           
           <div className="grid gap-6 md:grid-cols-2">
-            
-            {/* 1. 创建工单 */}
-            <a 
-              href="/admin/create-order" 
-              target="_blank" 
-              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
-            >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">📝</div>
-              <div className="text-2xl font-bold mb-2">创建工单</div>
-              <div className="text-slate-400 text-sm">生成新的收款链接发给客户</div>
-            </a>
-
-            {/* 2. 订单管理 */}
-            <a 
-              href="/admin/orders" 
-              target="_blank" 
-              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
-            >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">🔍</div>
-              <div className="text-2xl font-bold mb-2">订单审核与管理</div>
-              <div className="text-slate-400 text-sm">实时监控 / 审核放行 / 历史查询</div>
-            </a>
-
-            {/* 3. 添加收款码 */}
-            <a 
-              href="/admin/qr" 
-              target="_blank" 
-              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
-            >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">➕</div>
-              <div className="text-2xl font-bold mb-2">添加收款码</div>
-              <div className="text-slate-400 text-sm">上传新的二维码图片</div>
-            </a>
-
-            {/* 4. 收款码管理 */}
-            <a 
-              href="/admin/qr-manager" 
-              target="_blank" 
-              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
-            >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">⚙️</div>
-              <div className="text-2xl font-bold mb-2">收款码管理</div>
-              <div className="text-slate-400 text-sm">修改状态 / 重置次数 / 删除</div>
-            </a>
+            {[
+              { title: '创建工单', desc: '生成新的收款链接发给客户', link: '/admin/create-order', icon: '📝' },
+              { title: '订单管理', desc: '实时监控 / 审核放行 / 屏蔽IP', link: '/admin/orders', icon: '🔍' },
+              { title: '添加收款码', desc: '上传新的二维码图片', link: '/admin/qr', icon: '➕' },
+              { title: '收款码管理', desc: '修改状态 / 重置次数 / 删除', link: '/admin/qr-manager', icon: '⚙️' }
+            ].map((item, index) => (
+              <a 
+                key={index}
+                href={item.link}
+                target="_blank" 
+                rel="noopener noreferrer" // 强制新窗口打开的标准写法
+                className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left cursor-pointer"
+              >
+                <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">{item.icon}</div>
+                <div className="text-2xl font-bold mb-2">{item.title}</div>
+                <div className="text-slate-400 text-sm">{item.desc}</div>
+              </a>
+            ))}
           </div>
 
           <button onClick={handleLogout} className="mt-16 text-slate-500 hover:text-white underline text-sm transition-colors">退出安全登录</button>
@@ -92,7 +62,6 @@ export default function AdminDashboardPage() {
     )
   }
 
-  // 未登录：显示密码框
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <form onSubmit={handleLogin} className="bg-slate-900 p-10 rounded-2xl border border-slate-800 w-full max-w-sm text-center shadow-2xl">
