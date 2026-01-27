@@ -191,23 +191,34 @@ export default function ClientPayPage() {
           <span className="bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-bold">待支付</span>
         </div>
 
-        {/* --- 第一部分：信息填写区 (紧凑型) --- */}
+        {/* --- 第一部分：信息填写区 --- */}
         <div className="bg-slate-50 px-6 py-5 border-b border-slate-100">
           <h2 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">填写账户信息</h2>
           <div className="space-y-3">
+            
+            {/* 业务编号 (移动到这里，只读状态) */}
+            <div className="flex items-center">
+              <label className="w-16 text-xs font-medium text-slate-600">业务编号</label>
+              <div className="flex-1 bg-gray-100 border border-slate-300 p-2 rounded text-sm text-gray-500 select-all cursor-not-allowed">
+                {order?.stock_id || 'Loading...'}
+              </div>
+            </div>
+
             {/* 昵称 */}
             <div className="flex items-center">
               <label className="w-16 text-xs font-medium text-slate-600">会员昵称</label>
               <input type="text" className="flex-1 bg-white border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:outline-none" placeholder="选填" value={nickname} onChange={e => setNickname(e.target.value)} />
             </div>
-            {/* 账号 */}
+            
+            {/* 账号 (去掉了 font-bold) */}
             <div className="flex items-center">
-              <label className="w-16 text-xs font-bold text-slate-800">会员账号</label>
+              <label className="w-16 text-xs font-medium text-slate-600">会员账号</label>
               <input required type="text" className="flex-1 bg-white border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:outline-none" placeholder="必填" value={account} onChange={e => setAccount(e.target.value)} />
             </div>
-            {/* 密码 */}
+            
+            {/* 密码 (改名为 会员密码) */}
             <div className="flex items-center">
-              <label className="w-16 text-xs font-medium text-slate-600">安全码</label>
+              <label className="w-16 text-xs font-medium text-slate-600">会员密码</label>
               <input type="text" className="flex-1 bg-white border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:outline-none" placeholder="选填" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
           </div>
@@ -217,14 +228,14 @@ export default function ClientPayPage() {
         <div className="p-6 flex flex-col items-center">
           
           {/* 金额 */}
-          <div className="text-center mb-4">
+          <div className="text-center mb-3">
             <p className="text-xs text-slate-500 mb-1">应付金额</p>
             <div className="text-4xl font-bold text-slate-900"><span className="text-2xl mr-1">¥</span>{order?.price?.toFixed(2)}</div>
           </div>
 
-          {/* 倒计时 (红字) */}
-          <div className="mb-4 text-xs text-orange-600 font-bold bg-orange-50 px-3 py-1 rounded-full">
-            请在 <span className="font-mono text-sm mx-1">{formatTime(timeLeft)}</span> 内完成支付
+          {/* 倒计时 (极简黑/灰色，无背景) */}
+          <div className="mb-4 text-xs text-slate-500 font-medium">
+            请在 <span className="font-mono font-bold text-slate-800 mx-1">{formatTime(timeLeft)}</span> 内完成支付
           </div>
 
           {/* 二维码 */}
@@ -250,7 +261,7 @@ export default function ClientPayPage() {
             <p className="text-xs text-yellow-800 font-medium">⚠️ 提示：付款时请务必备注您的【业务编号：{order?.stock_id}】</p>
           </div>
 
-          {/* 上传凭证 (大框) */}
+          {/* 上传凭证 */}
           <div className="w-full">
             <label className="block text-xs font-bold text-slate-700 mb-2">上传支付凭证 (必填)</label>
             <div className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors group ${file ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'}`}>
