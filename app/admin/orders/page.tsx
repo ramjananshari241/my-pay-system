@@ -17,7 +17,7 @@ export default function OrderManagementPage() {
   useEffect(() => {
     fetchOrders()
     
-    // --- 实时监听逻辑 (保留原样) ---
+    // --- 实时监听逻辑 (保留) ---
     const channel = supabase
       .channel('orders-realtime')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
@@ -33,7 +33,7 @@ export default function OrderManagementPage() {
     return () => { stopRinging(); supabase.removeChannel(channel) }
   }, [filterType])
 
-  // --- 音效控制 (保留原样) ---
+  // --- 音效控制 (保留) ---
   const startRinging = () => {
     if (loopIntervalRef.current) return
     playOneTone()
@@ -48,7 +48,7 @@ export default function OrderManagementPage() {
   }
   const handleCloseNotification = () => { setNotification(null); stopRinging() }
 
-  // --- 数据操作 (保留原样) ---
+  // --- 数据操作 (保留) ---
   const fetchOrders = async () => {
     setLoading(true)
     setSelectedIds([])
@@ -154,7 +154,7 @@ export default function OrderManagementPage() {
                   <td className="p-4"><input type="checkbox" checked={selectedIds.includes(order.id)} onChange={() => toggleSelect(order.id)} /></td>
                   <td className="p-4"><div className="font-mono font-bold text-gray-800">{order.order_no}</div><div className="text-xs text-gray-400">ID: {order.id}</div></td>
                   
-                  {/* --- 修改重点：账号信息格式调整 --- */}
+                  {/* 账号信息 (已保留你的样式修改) */}
                   <td className="p-4">
                     <div className="space-y-1 text-sm text-gray-700">
                       <div>昵称：{order.client_nickname || '-'}</div>
@@ -176,8 +176,30 @@ export default function OrderManagementPage() {
                   </td>
                   
                   <td className="p-4">{order.screenshot_url ? <a href={order.screenshot_url} target="_blank" className="relative group block w-10 h-10 border rounded overflow-hidden"><img src={order.screenshot_url} className="w-full h-full object-cover" /></a> : '-'}</td>
-                  <td className="p-4">{!order.is_paid ? <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">未支付</span> : order.status === 'completed' ? <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold border border-green-200">✅ 已完成</span> : order.status === 'pending_review' ? <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-bold border border-yellow-200 animate-pulse">⏳ 待审核</span> : <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{order.status}</span>}</td>
-                  <td className="p-4 text-right space-x-2">{order.status === 'pending_review' && order.is_paid && <button onClick={() => handleApprove(order.id)} className="text-green-600 font-bold text-xs underline">通过</button>}<button onClick={() => handleDelete(order.id)} className="text-red-400 text-xs underline">删除</button></td>
+                  
+                  <td className="p-4">
+                    {!order.is_paid ? <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">未支付</span> : order.status === 'completed' ? <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold border border-green-200">✅ 已完成</span> : order.status === 'pending_review' ? <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-bold border border-yellow-200 animate-pulse">⏳ 待审核</span> : <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{order.status}</span>}
+                  </td>
+                  
+                  {/* --- 重点优化：操作按钮动效反馈 --- */}
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {order.status === 'pending_review' && order.is_paid && (
+                        <button 
+                          onClick={() => handleApprove(order.id)} 
+                          className="px-3 py-1 bg-green-50 text-green-600 border border-green-200 rounded hover:bg-green-600 hover:text-white hover:scale-105 hover:shadow-md transition-all duration-200 text-xs font-bold"
+                        >
+                          通过
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDelete(order.id)} 
+                        className="px-3 py-1 bg-white text-gray-400 border border-gray-200 rounded hover:bg-red-50 hover:text-red-600 hover:border-red-200 hover:scale-105 transition-all duration-200 text-xs"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
