@@ -37,29 +37,49 @@ export default function AdminDashboardPage() {
       <div className="min-h-screen bg-slate-900 text-white p-10 flex flex-col items-center justify-center">
         <div className="max-w-4xl w-full text-center">
           <h1 className="text-4xl font-bold mb-4 tracking-tight">管理员控制台</h1>
-          <p className="text-slate-400 mb-12">请选择要管理的项目</p>
+          <p className="text-slate-400 mb-12">请选择要管理的项目 (点击将在新窗口打开)</p>
           
           <div className="grid gap-6 md:grid-cols-2">
             
-            <a href="/admin/create-order" className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left">
+            {/* 1. 创建工单 */}
+            <a 
+              href="/admin/create-order" 
+              target="_blank" 
+              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
+            >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">📝</div>
               <div className="text-2xl font-bold mb-2">创建工单</div>
               <div className="text-slate-400 text-sm">生成新的收款链接发给客户</div>
             </a>
 
-            <a href="/admin/orders" className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left">
+            {/* 2. 订单管理 */}
+            <a 
+              href="/admin/orders" 
+              target="_blank" 
+              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
+            >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">🔍</div>
               <div className="text-2xl font-bold mb-2">订单审核与管理</div>
               <div className="text-slate-400 text-sm">实时监控 / 审核放行 / 历史查询</div>
             </a>
 
-            <a href="/admin/qr" className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left">
+            {/* 3. 添加收款码 */}
+            <a 
+              href="/admin/qr" 
+              target="_blank" 
+              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
+            >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">➕</div>
               <div className="text-2xl font-bold mb-2">添加收款码</div>
               <div className="text-slate-400 text-sm">上传新的二维码图片</div>
             </a>
 
-            <a href="/admin/qr-manager" className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left">
+            {/* 4. 收款码管理 */}
+            <a 
+              href="/admin/qr-manager" 
+              target="_blank" 
+              className="bg-slate-800 p-8 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition group text-left"
+            >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">⚙️</div>
               <div className="text-2xl font-bold mb-2">收款码管理</div>
               <div className="text-slate-400 text-sm">修改状态 / 重置次数 / 删除</div>
