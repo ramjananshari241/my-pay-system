@@ -8,6 +8,7 @@ export default function ClientPayPage() {
   const params = useParams()
   const orderId = params?.id
 
+  // --- 核心状态 ---
   const [order, setOrder] = useState<any>(null)
   const [primaryQr, setPrimaryQr] = useState<any>(null)
   const [backupQr, setBackupQr] = useState<any>(null)
@@ -15,7 +16,10 @@ export default function ClientPayPage() {
   const [loading, setLoading] = useState(true)
   const [isBanned, setIsBanned] = useState(false)
 
-  // 表单数据
+  // --- 倒计时状态 (20分钟 = 1200秒) ---
+  const [timeLeft, setTimeLeft] = useState(1200)
+
+  // --- 表单状态 ---
   const [account, setAccount] = useState('')
   const [nickname, setNickname] = useState('') 
   const [password, setPassword] = useState('') 
@@ -31,6 +35,31 @@ export default function ClientPayPage() {
     generateCaptcha()
     checkIpAndLoadOrder()
   }, [orderId])
+
+  // --- 倒计时逻辑 ---
+  useEffect(() => {
+    // 如果已经完成或加载中，不倒计时
+    if (isFinished || loading) return
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 0) {
+          clearInterval(timer)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [isFinished, loading])
+
+  // 时间格式化工具 (秒 -> MM:SS)
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0')
+    const s = (seconds % 60).toString().padStart(2, '0')
+    return `${m}:${s}`
+  }
 
   const checkIpAndLoadOrder = async () => {
     try {
@@ -186,10 +215,21 @@ export default function ClientPayPage() {
     <div className="min-h-screen bg-slate-100 py-8 px-4 font-sans text-gray-800">
       <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden border border-slate-200">
         
+        {/* --- 顶部 Header --- */}
         <div className="bg-white p-5 border-b border-slate-100 flex justify-between items-center">
           <div>
             <h1 className="text-lg font-bold text-slate-800">支付工单</h1>
-            <p className="text-xs text-slate-400 mt-1">NO. {order?.order_no}</p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs text-slate-400">NO. {order?.order_no}</p>
+              {/* --- 倒计时显示区 --- */}
+              <span className="text-slate-200">|</span>
+              <p className="text-xs text-orange-500 font-medium flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>有效时间 {formatTime(timeLeft)}</span>
+              </p>
+            </div>
           </div>
           <span className="bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-bold">待支付</span>
         </div>
@@ -214,7 +254,7 @@ export default function ClientPayPage() {
           
           <div className="w-full mt-4 bg-yellow-50 border border-yellow-100 p-3 rounded-lg text-center">
             <p className="text-xs text-yellow-800 font-medium">
-              温馨提示：请使用支付宝/微信扫码并转入准确数额，不要多也不要少，转账完成后请记得截图，将截图上传到的下方“支付凭证”区域，如当前通道无法完成支付（如风控、账户受限等）请点击下方切换通道，如仍然无法完成支付，请联系客服更换支付方式。
+              ⚠️ 温馨提示：付款时请务必备注您的【业务编号】，否则无法自动到账。
             </p>
           </div>
 
@@ -224,7 +264,7 @@ export default function ClientPayPage() {
                 onClick={handleReportRestricted} 
                 className="w-full flex items-center justify-center gap-2 bg-white text-gray-600 border border-gray-300 py-3 rounded-full text-sm font-medium hover:text-black hover:border-gray-400 hover:shadow-sm transition-all duration-200"
               >
-                <span>点击切换通道</span>
+                <span>无法支付？点击切换通道</span>
               </button>
             ) : (
               <div className="flex justify-center">
@@ -238,8 +278,6 @@ export default function ClientPayPage() {
 
         <form onSubmit={handleSubmit} className="px-6 pb-8 space-y-6">
           <div className="h-px bg-slate-100 w-full mb-6"></div>
-
-          {/* --- 顺序已调整：昵称 -> 账号 -> 密码 --- */}
 
           {/* 1. 昵称 (选填) */}
           <div className="space-y-1.5">
