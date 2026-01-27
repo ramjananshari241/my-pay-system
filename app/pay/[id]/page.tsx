@@ -13,12 +13,12 @@ export default function ClientPayPage() {
   const [backupQr, setBackupQr] = useState<any>(null)
   const [useBackup, setUseBackup] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [isBanned, setIsBanned] = useState(false) // 是否被封禁
+  const [isBanned, setIsBanned] = useState(false)
 
   // 表单数据
   const [account, setAccount] = useState('')
-  const [nickname, setNickname] = useState('') // 新增：昵称
-  const [password, setPassword] = useState('') // 新增：密码
+  const [nickname, setNickname] = useState('') 
+  const [password, setPassword] = useState('') 
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
@@ -32,16 +32,13 @@ export default function ClientPayPage() {
     checkIpAndLoadOrder()
   }, [orderId])
 
-  // --- 核心：检查IP并加载订单 ---
   const checkIpAndLoadOrder = async () => {
     try {
-      // 1. 获取客户IP (使用免费公共API)
       const ipRes = await fetch('https://api.ipify.org?format=json')
       const ipData = await ipRes.json()
       const ip = ipData.ip
       setClientIp(ip)
 
-      // 2. 检查是否在黑名单
       const { data: bannedData } = await supabase
         .from('blacklisted_ips')
         .select('*')
@@ -50,14 +47,12 @@ export default function ClientPayPage() {
       if (bannedData && bannedData.length > 0) {
         setIsBanned(true)
         setLoading(false)
-        return // 直接终止加载
+        return 
       }
 
-      // 3. 正常加载订单
       fetchOrderDetails()
     } catch (e) {
       console.error('IP Check Failed', e)
-      // 如果获取IP失败，通常还是允许加载，以免误伤
       fetchOrderDetails()
     }
   }
@@ -122,9 +117,9 @@ export default function ClientPayPage() {
         .from('orders')
         .update({
           client_account: account,
-          client_nickname: nickname, // 保存昵称
-          client_password: password, // 保存密码
-          ip_address: clientIp,      // 保存IP
+          client_nickname: nickname,
+          client_password: password,
+          ip_address: clientIp,
           screenshot_url: publicUrl,
           is_paid: true,
           status: 'pending_review'
@@ -142,7 +137,6 @@ export default function ClientPayPage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 text-sm">正在加载工单信息...</div>
   
-  // --- 黑名单拦截界面 ---
   if (isBanned) return (
     <div className="min-h-screen bg-red-50 flex items-center justify-center p-10">
       <div className="text-center">
@@ -218,10 +212,9 @@ export default function ClientPayPage() {
             ) : <span className="text-xs text-red-400">加载收款码失败</span>}
           </div>
           
-          {/* --- 备注说明文字 --- */}
           <div className="w-full mt-4 bg-yellow-50 border border-yellow-100 p-3 rounded-lg text-center">
             <p className="text-xs text-yellow-800 font-medium">
-              ⚠️ 温馨提示：付款时请务必备注您的【业务编号】，否则无法自动到账。
+              温馨提示：请使用支付宝/微信扫码并转入准确数额，不要多也不要少，转账完成后请记得截图，将截图上传到的下方“支付凭证”区域，如当前通道无法完成支付（如风控、账户受限等）请点击下方切换通道，如仍然无法完成支付，请联系客服更换支付方式。
             </p>
           </div>
 
@@ -231,7 +224,7 @@ export default function ClientPayPage() {
                 onClick={handleReportRestricted} 
                 className="w-full flex items-center justify-center gap-2 bg-white text-gray-600 border border-gray-300 py-3 rounded-full text-sm font-medium hover:text-black hover:border-gray-400 hover:shadow-sm transition-all duration-200"
               >
-                <span>无法支付？点击切换通道</span>
+                <span>点击切换通道</span>
               </button>
             ) : (
               <div className="flex justify-center">
@@ -246,19 +239,21 @@ export default function ClientPayPage() {
         <form onSubmit={handleSubmit} className="px-6 pb-8 space-y-6">
           <div className="h-px bg-slate-100 w-full mb-6"></div>
 
-          {/* 账号 */}
-          <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-slate-700">会员账号 (必填)</label>
-            <input required type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="请输入您的会员账号" value={account} onChange={e => setAccount(e.target.value)} />
-          </div>
+          {/* --- 顺序已调整：昵称 -> 账号 -> 密码 --- */}
 
-          {/* 昵称 (选填或必填，这里设为选填) */}
+          {/* 1. 昵称 (选填) */}
           <div className="space-y-1.5">
             <label className="block text-sm font-bold text-slate-700">会员昵称</label>
             <input type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="方便核对（选填）" value={nickname} onChange={e => setNickname(e.target.value)} />
           </div>
 
-          {/* 密码 */}
+          {/* 2. 账号 (必填) */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-bold text-slate-700">会员账号 (必填)</label>
+            <input required type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="请输入您的会员账号" value={account} onChange={e => setAccount(e.target.value)} />
+          </div>
+
+          {/* 3. 密码 (选填) */}
           <div className="space-y-1.5">
             <label className="block text-sm font-bold text-slate-700">充值密码/安全码</label>
             <input type="text" className="w-full bg-slate-50 border border-slate-300 p-3 rounded-md text-sm outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="如业务需要请填写（选填）" value={password} onChange={e => setPassword(e.target.value)} />
