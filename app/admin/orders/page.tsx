@@ -16,6 +16,8 @@ export default function OrderManagementPage() {
 
   useEffect(() => {
     fetchOrders()
+    
+    // --- 实时监听逻辑 (保留原样) ---
     const channel = supabase
       .channel('orders-realtime')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
@@ -31,6 +33,7 @@ export default function OrderManagementPage() {
     return () => { stopRinging(); supabase.removeChannel(channel) }
   }, [filterType])
 
+  // --- 音效控制 (保留原样) ---
   const startRinging = () => {
     if (loopIntervalRef.current) return
     playOneTone()
@@ -45,6 +48,7 @@ export default function OrderManagementPage() {
   }
   const handleCloseNotification = () => { setNotification(null); stopRinging() }
 
+  // --- 数据操作 (保留原样) ---
   const fetchOrders = async () => {
     setLoading(true)
     setSelectedIds([])
@@ -80,19 +84,14 @@ export default function OrderManagementPage() {
   }
   const toggleSelect = (id: number) => { selectedIds.includes(id) ? setSelectedIds(selectedIds.filter(sid => sid !== id)) : setSelectedIds([...selectedIds, id]) }
   const toggleSelectAll = () => { selectedIds.length === orders.length ? setSelectedIds([]) : setSelectedIds(orders.map(o => o.id)) }
-
-  // --- 新增：封禁IP ---
   const handleBanIp = async (ip: string) => {
     if (!ip) return
-    if (!confirm(`确定要永久屏蔽 IP: ${ip} 吗？\n该IP将无法再访问支付页面。`)) return
-    
+    if (!confirm(`确定要永久屏蔽 IP: ${ip} 吗？`)) return
     try {
       const { error } = await supabase.from('blacklisted_ips').insert([{ ip: ip }])
       if (error) throw error
       alert(`IP ${ip} 已加入黑名单！`)
-    } catch (err: any) {
-      alert('封禁失败: ' + err.message)
-    }
+    } catch (err: any) { alert('封禁失败: ' + err.message) }
   }
 
   return (
@@ -155,16 +154,17 @@ export default function OrderManagementPage() {
                   <td className="p-4"><input type="checkbox" checked={selectedIds.includes(order.id)} onChange={() => toggleSelect(order.id)} /></td>
                   <td className="p-4"><div className="font-mono font-bold text-gray-800">{order.order_no}</div><div className="text-xs text-gray-400">ID: {order.id}</div></td>
                   
-                  {/* 账号+密码+昵称 */}
+                  {/* --- 修改重点：账号信息格式调整 --- */}
                   <td className="p-4">
-                    <div className="font-bold text-gray-800">{order.client_account}</div>
-                    {order.client_nickname && <div className="text-xs text-gray-500">昵称: {order.client_nickname}</div>}
-                    {order.client_password && <div className="text-xs text-gray-500 mt-1 bg-gray-100 px-1 rounded inline-block">密码: {order.client_password}</div>}
+                    <div className="space-y-1 text-sm text-gray-700">
+                      <div>昵称：{order.client_nickname || '-'}</div>
+                      <div>账号：{order.client_account || '-'}</div>
+                      <div>密码：{order.client_password || '-'}</div>
+                    </div>
                   </td>
                   
                   <td className="p-4"><div className="font-bold text-gray-900">¥{order.price}</div><div className="text-xs text-gray-500">{order.stock_id}</div></td>
                   
-                  {/* 时间+IP+封禁 */}
                   <td className="p-4">
                     <div className="text-gray-600 text-xs">{order.created_at ? new Date(order.created_at).toLocaleString() : '-'}</div>
                     {order.ip_address && (
