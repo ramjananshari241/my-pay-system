@@ -9,8 +9,6 @@ export default function CreateOrderPage() {
   const [groupName, setGroupName] = useState('集合1')
   const [loading, setLoading] = useState(false)
   const [orderLink, setOrderLink] = useState('')
-  
-  // --- 新增：控制复制成功状态 ---
   const [copied, setCopied] = useState(false)
 
   const generateOrderNo = () => {
@@ -26,9 +24,10 @@ export default function CreateOrderPage() {
     e.preventDefault()
     setLoading(true)
     setOrderLink('')
-    setCopied(false) // 重置复制状态
+    setCopied(false)
 
     try {
+      // 1. 获取候选码
       const { data: candidates, error: fetchError } = await supabase
         .from('qr_codes')
         .select('*')
@@ -37,19 +36,30 @@ export default function CreateOrderPage() {
       
       if (fetchError) throw fetchError
 
+      // 2. 过滤掉满额的
+      // 注意：现在的 usage 只有客户付款了才涨，所以这里是在限制“成功单量”
       const availableQRs = candidates.filter(qr => qr.today_usage < qr.daily_limit)
 
       if (availableQRs.length < 2) {
-        alert(`【${groupName}】可用收款码不足2张`)
+        alert(`【${groupName}】可用收款码不足2张 (满额或无码)`)
         setLoading(false)
         return
       }
 
-      const shuffled = availableQRs.sort(() => 0.5 - Math.random())
-      const primaryQR = shuffled[0]
-      const backupQR = shuffled[1]
-      const orderNo = generateOrderNo()
+      // 3. --- 新算法：负载均衡 (防连续) ---
+      // 按照 "上次被选中的时间" 排序，空值(从未被选过)排最前，时间越早排越前
+      availableQRs.sort((a, b) => {
+        const timeA = a.last_selected_at ? new Date(a.last_selected_at).getTime() : 0
+        const timeB = b.last_selected_at ? new Date(b.last_selected_at).getTime() : 0
+        return timeA - timeB
+      })
 
+      // 取前两张（也就是最久没被用过的两张）
+      const primaryQR = availableQRs[0]
+      const backupQR = availableQRs[1]
+
+      // 4. 创建订单
+      const orderNo = generateOrderNo()
       const { data: orderData, error: createError } = await supabase
         .from('orders')
         .insert([{
@@ -67,14 +77,16 @@ export default function CreateOrderPage() {
 
       const newOrderId = orderData[0].id
 
-      await supabase
-        .from('qr_codes')
-        .update({ today_usage: primaryQR.today_usage + 1 })
-        .eq('id', primaryQR.id)
+      // 5. --- 关键修改：只更新 last_selected_at，不更新 today_usage ---
+      // 这样它们会排到队尾，下次不会被马上选中，但次数不增加
+      await Promise.all([
+        supabase.from('qr_codes').update({ last_selected_at: new Date() }).eq('id', primaryQR.id),
+        supabase.from('qr_codes').update({ last_selected_at: new Date() }).eq('id', backupQR.id)
+      ])
 
       const link = `${window.location.origin}/pay/${newOrderId}`
       setOrderLink(link)
-      alert('工单创建成功')
+      alert('工单创建成功！')
 
     } catch (error: any) {
       console.error(error)
@@ -84,14 +96,10 @@ export default function CreateOrderPage() {
     }
   }
 
-  // 处理复制逻辑
   const handleCopy = () => {
     navigator.clipboard.writeText(orderLink)
     setCopied(true)
-    // 2秒后恢复原状
-    setTimeout(() => {
-      setCopied(false)
-    }, 2000)
+    setTimeout(() => { setCopied(false) }, 2000)
   }
 
   return (
@@ -115,6 +123,7 @@ export default function CreateOrderPage() {
               <option value="集合2">集合2</option>
               <option value="集合3">集合3</option>
             </select>
+            <p className="text-xs text-gray-500 mt-2">系统将自动优选最久未使用的二维码，避免连续重复。</p>
           </div>
           <button type="submit" disabled={loading} className="w-full bg-black text-white p-4 rounded-lg font-bold hover:bg-gray-800">{loading ? '生成中...' : '生成工单链接'}</button>
         </form>
@@ -123,14 +132,7 @@ export default function CreateOrderPage() {
           <div className="mt-8 p-6 border-2 border-black rounded bg-white text-center">
             <p className="font-bold mb-3">工单已生成</p>
             <div className="bg-gray-100 p-4 border rounded font-mono mb-4 break-all">{orderLink}</div>
-            
-            {/* 改进后的复制按钮 */}
-            <button 
-              className={`px-6 py-2 rounded font-bold transition-all duration-300 ${copied ? 'bg-green-600 text-white scale-105' : 'bg-black text-white hover:bg-gray-800'}`} 
-              onClick={handleCopy}
-            >
-              {copied ? '已复制 ✅' : '点击复制链接'}
-            </button>
+            <button className={`px-6 py-2 rounded font-bold transition-all duration-300 ${copied ? 'bg-green-600 text-white scale-105' : 'bg-black text-white hover:bg-gray-800'}`} onClick={handleCopy}>{copied ? '已复制 ✅' : '点击复制链接'}</button>
           </div>
         )}
       </div>
