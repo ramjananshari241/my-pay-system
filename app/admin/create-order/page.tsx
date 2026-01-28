@@ -119,9 +119,9 @@ export default function CreateOrderPage() {
           <div>
             <label className="block mb-2 font-bold text-gray-700">集合</label>
             <select className="w-full border-2 border-gray-300 p-3 rounded-lg" value={groupName} onChange={e => setGroupName(e.target.value)}>
-              <option value="集合1">集合1</option>
-              <option value="集合2">集合2</option>
-              <option value="集合3">集合3</option>
+              <option value="集合1">支付宝</option>
+              <option value="集合2">微信</option>
+              <option value="集合3">USDT</option>
             </select>
             <p className="text-xs text-gray-500 mt-2">系统将自动优选最久未使用的二维码，避免连续重复。</p>
           </div>
