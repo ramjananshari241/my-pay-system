@@ -96,9 +96,9 @@ export default function AddQrPage() {
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
             >
-              <option value="集合1">集合1</option>
-              <option value="集合2">集合2</option>
-              <option value="集合3">集合3</option>
+              <option value="集合1">支付宝</option>
+              <option value="集合2">微信</option>
+              <option value="集合3">USDT</option>
             </select>
           </div>
 
