@@ -232,7 +232,7 @@ export default function ClientPayPage() {
             ) : <div className="flex justify-center"><span className="text-xs text-green-700 bg-green-50 px-4 py-1.5 rounded-full border border-green-200 font-bold">✅ 已启用备用通道</span></div>}
           </div>
           <div className="w-full bg-yellow-50 border border-yellow-100 p-3 rounded text-center mb-6">
-            <p className="text-xs text-yellow-800 font-medium">温馨提示：如当前二维码无法完成支付（如出现风控或收款限制）请点击上方切换支付通道，完成支付后请截图并上传到下方支付凭证区域，如需更换支付方式请联系客服重新获取工单。</p>
+            <p className="text-xs text-yellow-800 font-medium">如使用微信支付，请扫码添加好友直接转账（尽可能从零钱转账，可以减少风控概率，不要向收款账号发送任何信息），如当前二维码无法完成支付（如出现风控或收款限制）请点击上方切换支付通道，完成支付后请截图并上传到下方支付凭证区域，如需更换支付方式请联系客服重新获取工单。</p>
           </div>
           <div className="w-full">
             <label className="block text-xs font-bold text-slate-700 mb-2">上传支付凭证 (必填)</label>
