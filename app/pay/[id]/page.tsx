@@ -191,27 +191,27 @@ export default function ClientPayPage() {
       <div className="max-w-md mx-auto bg-white shadow-xl rounded-lg overflow-hidden border border-slate-200">
         
         <div className="bg-white px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-          <div><h1 className="text-lg font-bold text-slate-800">支付工单已创建</h1><p className="text-xs text-slate-400 mt-0.5">NO. {order?.order_no}</p></div>
+          <div><h1 className="text-lg font-bold text-slate-800">PRO+</h1><p className="text-xs text-slate-400 mt-0.5">NO. {order?.order_no}</p></div>
           <span className="bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-bold">待支付</span>
         </div>
 
         <div className="bg-slate-50 px-6 py-5 border-b border-slate-100">
-          <h2 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">请在下方填写PRO+会员信息，库存内容将被自动发送至您的会员仓库（如果您还未注册PRO+，我们将按照您填写的信息为您完成注册）</h2>
+          <h2 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">请填写您的PRO+会员信息（未注册的用户将自动完成注册）</h2>
           <div className="space-y-3">
             <div className="flex items-center">
               <label className="w-16 text-xs font-medium text-slate-600">库存编号</label>
               <div className="flex-1 bg-gray-100 border border-slate-300 p-2 rounded text-sm text-gray-500 select-all cursor-not-allowed">{order?.stock_id || 'Loading...'}</div>
             </div>
             <div className="flex items-center">
-              <label className="w-16 text-xs font-medium text-slate-600">昵称</label>
+              <label className="w-16 text-xs font-medium text-slate-600">昵称*</label>
               <input type="text" className="flex-1 bg-white border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:outline-none" placeholder="必填" value={nickname} onChange={e => setNickname(e.target.value)} />
             </div>
             <div className="flex items-center">
-              <label className="w-16 text-xs font-medium text-slate-600">账号</label>
+              <label className="w-16 text-xs font-medium text-slate-600">账号*</label>
               <input required type="text" className="flex-1 bg-white border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:outline-none" placeholder="必填" value={account} onChange={e => setAccount(e.target.value)} />
             </div>
             <div className="flex items-center">
-              <label className="w-16 text-xs font-medium text-slate-600">密码</label>
+              <label className="w-16 text-xs font-medium text-slate-600">密码*</label>
               <input type="text" className="flex-1 bg-white border border-slate-300 p-2 rounded text-sm focus:border-blue-500 focus:outline-none" placeholder="必填" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function ClientPayPage() {
             <p className="text-xs text-slate-500 mb-1">应付金额</p>
             <div className="text-4xl font-bold text-slate-900"><span className="text-2xl mr-1">¥</span>{order?.price?.toFixed(2)}</div>
           </div>
-          <div className="mb-4 text-xs text-slate-500 font-medium">请在 <span className="font-mono font-bold text-slate-800 mx-1">{formatTime(timeLeft)}</span> 内完成支付</div>
+          <div className="mb-4 text-xs text-slate-500 font-medium">请扫码转入正确的金额，请在 <span className="font-mono font-bold text-slate-800 mx-1">{formatTime(timeLeft)}</span> 内完成支付</div>
           <div className="bg-white p-2 border-2 border-slate-200 rounded-lg shadow-sm mb-4">
              {currentQrDisplay ? <img src={currentQrDisplay.image_url} alt="收款码" className="w-48 h-48 object-contain" /> : <span className="text-xs text-red-400">加载失败</span>}
           </div>
@@ -255,7 +255,7 @@ export default function ClientPayPage() {
                 <input required type="number" className="w-16 p-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-blue-500" placeholder="?" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)} />
               </div>
             </div>
-            <button type="submit" disabled={submitting} className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-md hover:bg-black disabled:bg-slate-400 text-sm tracking-wide transition-all shadow-md active:scale-95">{submitting ? '正在提交...' : '确认已支付，提交工单'}</button>
+            <button type="submit" disabled={submitting} className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-md hover:bg-black disabled:bg-slate-400 text-sm tracking-wide transition-all shadow-md active:scale-95">{submitting ? '正在提交...' : '确认已支付'}</button>
           </form>
         </div>
       </div>
