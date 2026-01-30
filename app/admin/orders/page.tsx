@@ -9,8 +9,8 @@ export default function OrderManagementPage() {
   const [filterType, setFilterType] = useState('all')
   const [keyword, setKeyword] = useState('')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
-
-  // --- 新增：收款码名称字典 ---
+  
+  // 字典
   const [qrMap, setQrMap] = useState<{[key: number]: string}>({})
 
   const [notification, setNotification] = useState<string | null>(null)
@@ -20,7 +20,6 @@ export default function OrderManagementPage() {
   useEffect(() => {
     fetchOrders()
     
-    // 实时监听逻辑
     const channel = supabase
       .channel('orders-realtime')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
@@ -36,7 +35,6 @@ export default function OrderManagementPage() {
     return () => { stopRinging(); supabase.removeChannel(channel) }
   }, [filterType])
 
-  // 音效控制
   const startRinging = () => {
     if (loopIntervalRef.current) return
     playOneTone()
@@ -51,28 +49,22 @@ export default function OrderManagementPage() {
   }
   const handleCloseNotification = () => { setNotification(null); stopRinging() }
 
-  // --- 数据操作 ---
   const fetchOrders = async () => {
     setLoading(true)
     setSelectedIds([])
     try {
-      // 1. 先获取所有收款码的 ID 和 名字，建立字典
+      // 1. 获取字典
       const { data: qrData } = await supabase.from('qr_codes').select('id, name')
       const map: {[key: number]: string} = {}
-      if (qrData) {
-        qrData.forEach((q: any) => {
-          map[q.id] = q.name
-        })
-      }
+      if (qrData) qrData.forEach((q: any) => { map[q.id] = q.name })
       setQrMap(map)
 
-      // 2. 再获取订单数据
+      // 2. 获取订单
       let query = supabase.from('orders').select('*').order('id', { ascending: false })
       if (filterType === 'pending') query = query.eq('status', 'pending_review')
       else if (filterType === 'completed') query = query.eq('status', 'completed')
       else if (filterType === 'unpaid') query = query.eq('is_paid', false)
       if (keyword.trim()) query = query.or(`order_no.ilike.%${keyword.trim()}%,client_account.ilike.%${keyword.trim()}%`)
-      
       const { data, error } = await query
       if (error) throw error
       setOrders(data || [])
@@ -156,7 +148,7 @@ export default function OrderManagementPage() {
                 <th className="p-4">账号信息</th>
                 <th className="p-4">金额/业务</th>
                 
-                {/* 新增列 */}
+                {/* 收款通道 */}
                 <th className="p-4">收款通道</th>
 
                 <th className="p-4">时间/IP</th>
@@ -183,11 +175,11 @@ export default function OrderManagementPage() {
                   
                   <td className="p-4"><div className="font-bold text-gray-900">¥{order.price}</div><div className="text-xs text-gray-500">{order.stock_id}</div></td>
                   
-                  {/* 新增：收款通道显示列 */}
+                  {/* --- 关键逻辑：优先显示 actual_qr_id --- */}
                   <td className="p-4">
                     {order.is_paid ? (
                       <span className="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium border border-blue-100">
-                        {qrMap[order.primary_qr_id] || '未知/已删'}
+                        {qrMap[order.actual_qr_id || order.primary_qr_id] || '未知/已删'}
                       </span>
                     ) : (
                       <span className="text-gray-300 text-xs">-</span>
