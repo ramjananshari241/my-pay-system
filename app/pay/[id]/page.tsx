@@ -222,7 +222,7 @@ export default function ClientPayPage() {
             <p className="text-xs text-slate-500 mb-1">应付金额</p>
             <div className="text-4xl font-bold text-slate-900"><span className="text-2xl mr-1">¥</span>{order?.price?.toFixed(2)}</div>
           </div>
-          <div className="mb-4 text-xs text-slate-500 font-medium">请扫码转入正确的金额，请在 <span className="font-mono font-bold text-slate-800 mx-1">{formatTime(timeLeft)}</span> 内完成支付</div>
+          <div className="mb-4 text-xs text-slate-500 font-medium">请转入正确金额，不要多也不要少，请在 <span className="font-mono font-bold text-slate-800 mx-1">{formatTime(timeLeft)}</span> 内完成支付</div>
           <div className="bg-white p-2 border-2 border-slate-200 rounded-lg shadow-sm mb-4">
              {currentQrDisplay ? <img src={currentQrDisplay.image_url} alt="收款码" className="w-48 h-48 object-contain" /> : <span className="text-xs text-red-400">加载失败</span>}
           </div>
