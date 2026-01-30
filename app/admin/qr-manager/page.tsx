@@ -153,7 +153,7 @@ export default function QrManagerPage() {
                 </div>
                 <div className="text-sm flex-1">
                   <div className="flex justify-between mb-1">
-                    <span>今日成功单量</span>
+                    <span>今日收款次数</span>
                     <span className="font-mono font-bold">{qr.today_usage} / {qr.daily_limit}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
