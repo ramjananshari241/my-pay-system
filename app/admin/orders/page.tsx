@@ -10,6 +10,9 @@ export default function OrderManagementPage() {
   const [keyword, setKeyword] = useState('')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
+  // --- 新增：收款码名称字典 ---
+  const [qrMap, setQrMap] = useState<{[key: number]: string}>({})
+
   const [notification, setNotification] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const loopIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -17,7 +20,7 @@ export default function OrderManagementPage() {
   useEffect(() => {
     fetchOrders()
     
-    // --- 实时监听逻辑 (保留) ---
+    // 实时监听逻辑
     const channel = supabase
       .channel('orders-realtime')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
@@ -33,7 +36,7 @@ export default function OrderManagementPage() {
     return () => { stopRinging(); supabase.removeChannel(channel) }
   }, [filterType])
 
-  // --- 音效控制 (保留) ---
+  // 音效控制
   const startRinging = () => {
     if (loopIntervalRef.current) return
     playOneTone()
@@ -48,16 +51,28 @@ export default function OrderManagementPage() {
   }
   const handleCloseNotification = () => { setNotification(null); stopRinging() }
 
-  // --- 数据操作 (保留) ---
+  // --- 数据操作 ---
   const fetchOrders = async () => {
     setLoading(true)
     setSelectedIds([])
     try {
+      // 1. 先获取所有收款码的 ID 和 名字，建立字典
+      const { data: qrData } = await supabase.from('qr_codes').select('id, name')
+      const map: {[key: number]: string} = {}
+      if (qrData) {
+        qrData.forEach((q: any) => {
+          map[q.id] = q.name
+        })
+      }
+      setQrMap(map)
+
+      // 2. 再获取订单数据
       let query = supabase.from('orders').select('*').order('id', { ascending: false })
       if (filterType === 'pending') query = query.eq('status', 'pending_review')
       else if (filterType === 'completed') query = query.eq('status', 'completed')
       else if (filterType === 'unpaid') query = query.eq('is_paid', false)
       if (keyword.trim()) query = query.or(`order_no.ilike.%${keyword.trim()}%,client_account.ilike.%${keyword.trim()}%`)
+      
       const { data, error } = await query
       if (error) throw error
       setOrders(data || [])
@@ -140,6 +155,10 @@ export default function OrderManagementPage() {
                 <th className="p-4">工单号/ID</th>
                 <th className="p-4">账号信息</th>
                 <th className="p-4">金额/业务</th>
+                
+                {/* 新增列 */}
+                <th className="p-4">收款通道</th>
+
                 <th className="p-4">时间/IP</th>
                 <th className="p-4">凭证</th>
                 <th className="p-4">状态</th>
@@ -147,14 +166,13 @@ export default function OrderManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {loading && <tr><td colSpan={8} className="p-10 text-center text-gray-400">加载中...</td></tr>}
-              {!loading && orders.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-gray-400">无数据</td></tr>}
+              {loading && <tr><td colSpan={9} className="p-10 text-center text-gray-400">加载中...</td></tr>}
+              {!loading && orders.length === 0 && <tr><td colSpan={9} className="p-10 text-center text-gray-400">无数据</td></tr>}
               {orders.map(order => (
                 <tr key={order.id} className={`hover:bg-blue-50 transition-colors ${selectedIds.includes(order.id) ? 'bg-blue-50' : ''}`}>
                   <td className="p-4"><input type="checkbox" checked={selectedIds.includes(order.id)} onChange={() => toggleSelect(order.id)} /></td>
                   <td className="p-4"><div className="font-mono font-bold text-gray-800">{order.order_no}</div><div className="text-xs text-gray-400">ID: {order.id}</div></td>
                   
-                  {/* 账号信息 (已保留你的样式修改) */}
                   <td className="p-4">
                     <div className="space-y-1 text-sm text-gray-700">
                       <div>昵称：{order.client_nickname || '-'}</div>
@@ -165,6 +183,17 @@ export default function OrderManagementPage() {
                   
                   <td className="p-4"><div className="font-bold text-gray-900">¥{order.price}</div><div className="text-xs text-gray-500">{order.stock_id}</div></td>
                   
+                  {/* 新增：收款通道显示列 */}
+                  <td className="p-4">
+                    {order.is_paid ? (
+                      <span className="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium border border-blue-100">
+                        {qrMap[order.primary_qr_id] || '未知/已删'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 text-xs">-</span>
+                    )}
+                  </td>
+
                   <td className="p-4">
                     <div className="text-gray-600 text-xs">{order.created_at ? new Date(order.created_at).toLocaleString() : '-'}</div>
                     {order.ip_address && (
@@ -181,23 +210,12 @@ export default function OrderManagementPage() {
                     {!order.is_paid ? <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs">未支付</span> : order.status === 'completed' ? <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold border border-green-200">✅ 已完成</span> : order.status === 'pending_review' ? <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-bold border border-yellow-200 animate-pulse">⏳ 待审核</span> : <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs">{order.status}</span>}
                   </td>
                   
-                  {/* --- 重点优化：操作按钮动效反馈 --- */}
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {order.status === 'pending_review' && order.is_paid && (
-                        <button 
-                          onClick={() => handleApprove(order.id)} 
-                          className="px-3 py-1 bg-green-50 text-green-600 border border-green-200 rounded hover:bg-green-600 hover:text-white hover:scale-105 hover:shadow-md transition-all duration-200 text-xs font-bold"
-                        >
-                          通过
-                        </button>
+                        <button onClick={() => handleApprove(order.id)} className="px-3 py-1 bg-green-50 text-green-600 border border-green-200 rounded hover:bg-green-600 hover:text-white hover:scale-105 hover:shadow-md transition-all duration-200 text-xs font-bold">通过</button>
                       )}
-                      <button 
-                        onClick={() => handleDelete(order.id)} 
-                        className="px-3 py-1 bg-white text-gray-400 border border-gray-200 rounded hover:bg-red-50 hover:text-red-600 hover:border-red-200 hover:scale-105 transition-all duration-200 text-xs"
-                      >
-                        删除
-                      </button>
+                      <button onClick={() => handleDelete(order.id)} className="px-3 py-1 bg-white text-gray-400 border border-gray-200 rounded hover:bg-red-50 hover:text-red-600 hover:border-red-200 hover:scale-105 transition-all duration-200 text-xs">删除</button>
                     </div>
                   </td>
                 </tr>
