@@ -242,7 +242,7 @@ export default function OrderManagementPage() {
                         <button onClick={() => handleApprove(o.id)} className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md shadow-emerald-100 hover:bg-emerald-600 transition-all">审核</button>
                        )}
                        {o.status === 'completed' && (
-                        <button onClick={() => handleOpenRemitModal(o.id, o.price)} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-md shadow-blue-100 hover:bg-blue-700 transition-all">汇款</button>
+                        <button onClick={() => handleOpenRemitModal(o.id, o.price)} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-md shadow-blue-100 hover:bg-blue-700 transition-all">回U</button>
                        )}
 
                        {/* --- 修改重点：在页面内打开大图预览 --- */}
