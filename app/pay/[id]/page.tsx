@@ -5,9 +5,9 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/utils/supabase'
 
 const CHANNELS = [
-  { id: '集合1', name: '支付宝', icon: '💳', hint: '请使用支付宝扫码，转入正确金额，不要多也不要少。如当前通道支付受限（如风控、限制收款等）请点击上方按钮切换备用通道', dual: true },
-  { id: '集合2', name: '微信支付', icon: '💬', hint: '请扫码添加好友后转账，请不要向收款账号发送任何消息！如当前通道支付受限（如风控、限制收款等）请点击上方按钮切换备用通道', dual: true },
-  { id: '集合3', name: 'USDT (TRC20)', icon: '🌐', hint: '仅支持 TRC20 网络，请注意转账金额与工单一致。', dual: false }
+  { id: '集合1', name: '支付宝', icon: '💳', hint: '请使用支付宝扫码，转入正确金额，不要多也不要少。如当前通道支付受限（如风控、限制收款等）请点击上方按钮切换备用通道，付款后请截图并上传到下方区域。', dual: true },
+  { id: '集合2', name: '微信支付', icon: '💬', hint: '请扫码添加好友后转账，请不要向收款账号发送任何消息！如当前通道支付受限（如风控、限制收款等）请点击上方按钮切换备用通道，付款后请截图并上传到下方区域。', dual: true },
+  { id: '集合3', name: 'USDT (TRC20)', icon: '🌐', hint: '仅支持 TRC20 网络，请注意转账金额与工单一致，付款后请截图并上传到下方区域。', dual: false }
 ]
 
 export default function ModernDarkPayPage() {
@@ -96,7 +96,7 @@ export default function ModernDarkPayPage() {
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (parseInt(captchaInput) !== captcha.a) return alert('验证码错误')
-    if (!file) return alert('请上传支付截图')
+    if (!file) return alert('请上传支付凭证')
     setSubmitting(true)
     try {
       const fileName = `pay_${order.order_no}_${Date.now()}`
@@ -204,7 +204,7 @@ export default function ModernDarkPayPage() {
                       ) : (
                          <>
                             <p className="text-3xl mb-3">📁</p>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">请点击此处上传支付截图</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">上传截图</p>
                          </>
                       )}
                       <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onFileChange} />
@@ -221,7 +221,7 @@ export default function ModernDarkPayPage() {
                   </div>
 
                   <button onClick={handleSubmit} disabled={submitting} className="w-full bg-white text-black font-black py-6 rounded-3xl hover:bg-slate-200 transition-all shadow-2xl active:scale-95 disabled:opacity-30 uppercase tracking-[0.3em] text-xs">
-                    {submitting ? 'Encrypting...' : '确定已支付'}
+                    {submitting ? 'Encrypting...' : '已支付，提交订单'}
                   </button>
                   <button onClick={() => setStep(1)} className="w-full text-slate-700 text-[10px] uppercase font-black tracking-widest hover:text-slate-400 transition-colors py-4">← 更换支付方式</button>
                 </div>
