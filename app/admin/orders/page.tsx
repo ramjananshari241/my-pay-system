@@ -129,7 +129,7 @@ export default function OrderManagementPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-black mb-2 italic tracking-tighter">CONFIRM REMITTANCE</h3>
-            <p className="text-gray-500 text-[10px] mb-6 uppercase tracking-[0.2em] font-black opacity-60">输入实际汇出金额 (USDT)</p>
+            <p className="text-gray-500 text-[10px] mb-6 uppercase tracking-[0.2em] font-black opacity-60">输入回U金额 (USDT)</p>
             <div className="relative mb-8">
               <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-500 text-xl">U</span>
               <input autoFocus type="number" step="0.01" className="w-full border-b-4 border-gray-100 focus:border-indigo-500 bg-transparent p-4 pr-12 outline-none font-mono text-4xl font-black transition-all tabular-nums" value={remitModal.amount} onChange={(e) => setRemitModal({...remitModal, amount: e.target.value})} />
