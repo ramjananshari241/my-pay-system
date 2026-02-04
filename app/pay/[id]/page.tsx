@@ -186,7 +186,7 @@ export default function ModernDarkPayPage() {
               {currentChannel.dual && !useBackup && (
                 <button onClick={handleSwitchChannel} className="text-[10px] text-slate-500 hover:text-white transition-colors border border-slate-800 px-6 py-3 rounded-full mb-8 uppercase font-black tracking-[0.2em]">无法付款？点击此处切换到备用通道</button>
               )}
-              {useBackup && <div className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">🛡️ Security Backup Enabled</div>}
+              {useBackup && <div className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">🛡️ 已切换备用通道</div>}
 
               <div className="w-full bg-slate-900 border border-slate-800 p-6 rounded-3xl text-center mb-10">
                 <p className="text-[11px] text-indigo-300/70 font-medium leading-relaxed italic tracking-wide">"{currentChannel.hint}"</p>
@@ -204,7 +204,7 @@ export default function ModernDarkPayPage() {
                       ) : (
                          <>
                             <p className="text-3xl mb-3">📁</p>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">上传截图</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">上传支付凭证</p>
                          </>
                       )}
                       <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onFileChange} />
