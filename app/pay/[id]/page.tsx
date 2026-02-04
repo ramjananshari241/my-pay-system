@@ -123,10 +123,10 @@ export default function ModernDarkPayPage() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 text-center shadow-2xl">
         <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20"><span className="text-4xl text-emerald-500">✓</span></div>
-        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">SUCCESS</h2>
-        <p className="text-slate-500 text-xs mb-8 uppercase font-black tracking-widest opacity-60">Wait for Audit</p>
+        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">提交成功</h2>
+        <p className="text-slate-500 text-xs mb-8 uppercase font-black tracking-widest opacity-60">请回到客服聊天窗口获取库存链接</p>
         <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 text-left relative overflow-hidden">
-          <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mb-3">Order Token</p>
+          <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mb-3">请保存您的订单编号</p>
           <div className="text-2xl font-mono font-black text-emerald-400 tracking-tighter select-all">{order?.order_no}</div>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default function ModernDarkPayPage() {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-5 rounded-3xl">
-                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Verification</span>
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">请在右侧输入正确答案</span>
                     <div className="flex items-center gap-4">
                       <span className="font-mono text-white font-bold tracking-tighter">{captcha.q}</span>
                       <input type="number" className="w-20 bg-slate-950 border border-slate-800 p-3 rounded-2xl text-center text-sm outline-none focus:border-white transition-all text-white font-black" placeholder="?" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)} />
@@ -221,9 +221,9 @@ export default function ModernDarkPayPage() {
                   </div>
 
                   <button onClick={handleSubmit} disabled={submitting} className="w-full bg-white text-black font-black py-6 rounded-3xl hover:bg-slate-200 transition-all shadow-2xl active:scale-95 disabled:opacity-30 uppercase tracking-[0.3em] text-xs">
-                    {submitting ? 'Encrypting...' : 'Finalize Settlement'}
+                    {submitting ? 'Encrypting...' : '确定已支付'}
                   </button>
-                  <button onClick={() => setStep(1)} className="w-full text-slate-700 text-[10px] uppercase font-black tracking-widest hover:text-slate-400 transition-colors py-4">← Change Gateway</button>
+                  <button onClick={() => setStep(1)} className="w-full text-slate-700 text-[10px] uppercase font-black tracking-widest hover:text-slate-400 transition-colors py-4">← 更换支付方式</button>
                 </div>
               </div>
             </div>
