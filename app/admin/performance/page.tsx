@@ -6,29 +6,26 @@ export default function PerformancePage() {
   const [stats, setStats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // --- 新增：日期筛选状态 ---
+  // 日期筛选状态
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1) // 1-12
+  const [month, setMonth] = useState(now.getMonth() + 1)
 
   useEffect(() => {
     calculateStats()
-  }, [year, month]) // 当年份或月份改变时，重新计算
+  }, [year, month])
 
   const calculateStats = async () => {
     setLoading(true)
     try {
-      // 1. 计算所选月份的开始和结束时间
-      // 开始时间：YYYY-MM-01 00:00:00
       const startDate = new Date(year, month - 1, 1).toISOString()
-      // 结束时间：下个月的 1 号 00:00:00 (即本月最后时刻)
       const endDate = new Date(year, month, 1).toISOString()
 
-      // 2. 查询数据：已完成 + 在时间范围内
+      // --- 关键修复：查询状态包含 'completed' 或 'remitted' 的订单 ---
       const { data, error } = await supabase
         .from('orders')
-        .select('price, creator_name')
-        .eq('status', 'completed')
+        .select('price, creator_name, status')
+        .in('status', ['completed', 'remitted']) // 同时统计这两个状态
         .gte('created_at', startDate)
         .lt('created_at', endDate)
 
@@ -52,22 +49,19 @@ export default function PerformancePage() {
     }
   }
 
-  // 生成年份选项 (今年及过去 2 年)
   const years = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2]
-  // 生成月份选项 (1-12)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
   return (
     <div className="p-10 bg-slate-950 min-h-screen text-white font-sans selection:bg-indigo-500">
       <div className="max-w-4xl mx-auto">
         
-        {/* 标题区域 */}
         <div className="mb-10 text-center">
           <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.4em] mb-4">Financial Intelligence</p>
           <h1 className="text-4xl font-black italic uppercase tracking-tighter">业绩报表查询</h1>
         </div>
 
-        {/* --- 日期筛选器 --- */}
+        {/* 日期筛选器 */}
         <div className="bg-slate-900 p-6 rounded-[2.5rem] border border-slate-800 mb-8 flex flex-wrap justify-center items-center gap-6 shadow-2xl">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-black text-slate-500 uppercase">Year</span>

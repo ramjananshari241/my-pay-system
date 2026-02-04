@@ -102,7 +102,7 @@ export default function CreateOrderPage() {
           </div>
 
           <button type="submit" disabled={loading} className="w-full bg-black text-white py-4 rounded-xl font-bold hover:opacity-80 transition-all uppercase tracking-widest text-xs shadow-lg active:scale-95">
-            {loading ? 'Processing...' : 'Generate Dispatch Link'}
+            {loading ? 'Processing...' : '创建订单'}
           </button>
         </form>
 
@@ -116,7 +116,7 @@ export default function CreateOrderPage() {
               className={`w-full py-3 rounded-xl font-bold transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`} 
               onClick={handleCopy}
             >
-              {copied ? 'Copied ✅' : 'Copy Link'}
+              {copied ? '复制成功 ✅' : '复制订单链接'}
             </button>
           </div>
         )}
