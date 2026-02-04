@@ -19,7 +19,7 @@ export default function ModernDarkPayPage() {
   const [currentChannel, setCurrentChannel] = useState<any>(null)
   const [useBackup, setUseBackup] = useState(false)
   
-  const [step, setStep] = useState(1) // 1: 选渠道, 2: 支付
+  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
@@ -27,6 +27,10 @@ export default function ModernDarkPayPage() {
   const [clientIp, setClientIp] = useState('')
   const [timeLeft, setTimeLeft] = useState(600000)
   const [file, setFile] = useState<File | null>(null)
+  
+  // --- 新增：图片预览地址 ---
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
   const [captcha, setCaptcha] = useState({ q: '1+1=?', a: 2 })
   const [captchaInput, setCaptchaInput] = useState('')
 
@@ -52,42 +56,41 @@ export default function ModernDarkPayPage() {
       const ipData = await ipRes.json(); setClientIp(ipData.ip)
       const { data: banned } = await supabase.from('blacklisted_ips').select('*').eq('ip', ipData.ip)
       if (banned?.length) { setIsBanned(true); setLoading(false); return }
-      
       const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single()
       if (error) throw error
-      setOrder(data)
-      if (data.is_paid) setIsFinished(true)
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+      setOrder(data); if (data.is_paid) setIsFinished(true)
+    } finally { setLoading(false) }
   }
 
-  // 核心：选择渠道并实时抽取二维码
   const handleSelectChannel = async (channel: any) => {
     setLoading(true)
     try {
       const { data: qrs } = await supabase.from('qr_codes').select('*').eq('group_name', channel.id).eq('status', 'active')
       const available = (qrs || []).filter(q => q.today_usage < q.daily_limit)
-      
-      if (available.length < (channel.dual ? 2 : 1)) return alert('通道维护中，请选择其他方式')
-
-      // 负载均衡排序
+      if (available.length < (channel.dual ? 2 : 1)) return alert('通道维护中')
       available.sort((a, b) => (new Date(a.last_selected_at || 0).getTime()) - (new Date(b.last_selected_at || 0).getTime()))
-
-      const pQr = available[0]
-      const bQr = channel.dual ? available[1] : null
-
-      // 更新记录
+      const pQr = available[0]; const bQr = channel.dual ? available[1] : null
       await supabase.from('orders').update({ channel_type: channel.name }).eq('id', orderId)
       await supabase.from('qr_codes').update({ last_selected_at: new Date() }).eq('id', pQr.id)
       if (bQr) await supabase.from('qr_codes').update({ last_selected_at: new Date() }).eq('id', bQr.id)
-
       setQrDisplay({ primary: pQr, backup: bQr }); setCurrentChannel(channel); setStep(2)
-    } catch (e) { alert('系统繁忙') } finally { setLoading(false) }
+    } finally { setLoading(false) }
   }
 
   const handleSwitchChannel = async () => {
     if (!confirm('是否切换备用通道？')) return
     setUseBackup(true)
     await supabase.from('qr_codes').update({ status: 'restricted' }).eq('id', qrDisplay.primary.id)
+  }
+
+  // --- 处理文件上传及预览 ---
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) {
+      setFile(selectedFile)
+      // 创建预览图链接
+      setPreviewUrl(URL.createObjectURL(selectedFile))
+    }
   }
 
   const handleSubmit = async (e: any) => {
@@ -100,14 +103,12 @@ export default function ModernDarkPayPage() {
       await supabase.storage.from('images').upload(fileName, file)
       const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
       const finalQr = useBackup ? qrDisplay.backup : qrDisplay.primary
-
       await supabase.from('orders').update({
         ip_address: clientIp, screenshot_url: publicUrl, is_paid: true, status: 'pending_review', actual_qr_id: finalQr.id
       }).eq('id', orderId)
-
       await supabase.from('qr_codes').update({ today_usage: finalQr.today_usage + 1 }).eq('id', finalQr.id)
       setIsFinished(true)
-    } catch (e) { alert('提交失败') } finally { setSubmitting(false) }
+    } finally { setSubmitting(false) }
   }
 
   const generateCaptcha = () => {
@@ -115,15 +116,15 @@ export default function ModernDarkPayPage() {
     setCaptcha({ q: `${a} + ${b} = ?`, a: a + b }); setCaptchaInput('')
   }
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-600 font-mono tracking-widest animate-pulse">SYSTEM_LOADING...</div>
-  if (isBanned) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-500 font-black p-10 text-center uppercase tracking-tighter">Access Denied / Security Policy</div>
+  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-600 font-mono tracking-widest animate-pulse font-black">AUTHENTICATING...</div>
+  if (isBanned) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-red-500 font-black p-10 text-center uppercase tracking-tighter">Access Denied</div>
 
   if (isFinished) return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 text-center shadow-2xl">
         <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20"><span className="text-4xl text-emerald-500">✓</span></div>
         <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">SUCCESS</h2>
-        <p className="text-slate-500 text-sm mb-8 uppercase font-bold tracking-widest">Ticket Submitted</p>
+        <p className="text-slate-500 text-xs mb-8 uppercase font-black tracking-widest opacity-60">Wait for Audit</p>
         <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 text-left relative overflow-hidden">
           <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mb-3">Order Token</p>
           <div className="text-2xl font-mono font-black text-emerald-400 tracking-tighter select-all">{order?.order_no}</div>
@@ -134,14 +135,15 @@ export default function ModernDarkPayPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-white selection:text-black pb-20">
-      {/* 顶部金额区域 - 官方商务风 */}
       <header className="max-w-md mx-auto pt-10 px-6 text-center">
-        <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.4em] mb-6">Secure Checkout Terminal</p>
-        <div className="bg-slate-900 border border-slate-800 p-10 rounded-[3rem] shadow-inner">
+        <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.4em] mb-6 opacity-40">Secure Terminal</p>
+        <div className="bg-slate-900 border border-slate-800 p-10 rounded-[3rem] shadow-inner relative overflow-hidden">
+           {/* 背景装饰 */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full"></div>
           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Payable Amount</p>
           <div className="flex items-baseline justify-center text-white">
-            <span className="text-2xl font-light mr-2 opacity-40 italic">CNY</span>
-            <span className="text-6xl font-medium tracking-tighter tabular-nums">{order?.price?.toFixed(2)}</span>
+            <span className="text-2xl font-light mr-2 opacity-30 italic font-mono">CNY</span>
+            <span className="text-6xl font-medium tracking-tighter tabular-nums font-mono">{order?.price?.toFixed(2)}</span>
           </div>
           <div className="mt-8 flex justify-center">
             <span className="text-[10px] bg-black/50 border border-slate-800 px-4 py-1.5 rounded-full text-slate-500 font-mono tracking-tighter">#{order?.stock_id}</span>
@@ -160,7 +162,7 @@ export default function ModernDarkPayPage() {
                     <span className="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">{ch.icon}</span>
                     <div className="text-left">
                       <p className="font-bold text-white text-lg tracking-tight">{ch.name}</p>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest opacity-50 italic">Verified Channel</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest opacity-40 italic">Instant Sync</p>
                     </div>
                   </div>
                   <span className="text-slate-700 group-hover:text-white transition-colors">→</span>
@@ -174,7 +176,7 @@ export default function ModernDarkPayPage() {
               <div className="mb-10 flex flex-col items-center">
                  <p className="text-[10px] text-orange-500 font-black uppercase tracking-[0.3em] mb-5 flex items-center gap-2">
                     <span className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></span>
-                    Window Expiry: {formatTime(timeLeft)}
+                    Expires: {formatTime(timeLeft)}
                  </p>
                  <div className="relative p-5 bg-white rounded-[3rem] shadow-[0_0_100px_rgba(255,255,255,0.05)]">
                     <img src={useBackup ? qrDisplay.backup?.image_url : qrDisplay.primary?.image_url} className="w-52 h-52 object-contain" />
@@ -182,20 +184,30 @@ export default function ModernDarkPayPage() {
               </div>
 
               {currentChannel.dual && !useBackup && (
-                <button onClick={handleSwitchChannel} className="text-[10px] text-slate-500 hover:text-white transition-colors border border-slate-800 px-6 py-3 rounded-full mb-8 uppercase font-black tracking-[0.2em]">Switch Gateway</button>
+                <button onClick={handleSwitchChannel} className="text-[10px] text-slate-500 hover:text-white transition-colors border border-slate-800 px-6 py-3 rounded-full mb-8 uppercase font-black tracking-[0.2em]">Cannot Pay? Switch Channel</button>
               )}
-              {useBackup && <div className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2"><span>🛡️</span> Security Backup Active</div>}
+              {useBackup && <div className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">🛡️ Security Backup Enabled</div>}
 
               <div className="w-full bg-slate-900 border border-slate-800 p-6 rounded-3xl text-center mb-10">
-                <p className="text-xs text-indigo-300/70 font-medium leading-relaxed tracking-wide italic">"{currentChannel.hint}"</p>
+                <p className="text-[11px] text-indigo-300/70 font-medium leading-relaxed italic tracking-wide">"{currentChannel.hint}"</p>
               </div>
 
               <div className="w-full space-y-6">
                 <div className="relative">
-                   <div className={`border-2 border-dashed rounded-[2rem] p-12 text-center transition-all duration-500 ${file ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-800 hover:border-slate-600 bg-slate-900/50'}`}>
-                      <p className="text-3xl mb-3">{file ? '💎' : '📁'}</p>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{file ? file.name : 'Upload Payment Document'}</p>
-                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => {if(e.target.files) setFile(e.target.files[0])}} />
+                   {/* 核心：缩略图预览展示逻辑 */}
+                   <div className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all duration-500 overflow-hidden min-h-[200px] flex flex-col items-center justify-center ${file ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-800 hover:border-slate-600 bg-slate-900/50'}`}>
+                      {previewUrl ? (
+                         <div className="relative w-full h-full">
+                            <img src={previewUrl} className="max-h-48 rounded-xl object-contain shadow-lg mb-3" />
+                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Image Ready ✓</p>
+                         </div>
+                      ) : (
+                         <>
+                            <p className="text-3xl mb-3">📁</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Drop Payment Document</p>
+                         </>
+                      )}
+                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onFileChange} />
                    </div>
                 </div>
 
@@ -209,22 +221,15 @@ export default function ModernDarkPayPage() {
                   </div>
 
                   <button onClick={handleSubmit} disabled={submitting} className="w-full bg-white text-black font-black py-6 rounded-3xl hover:bg-slate-200 transition-all shadow-2xl active:scale-95 disabled:opacity-30 uppercase tracking-[0.3em] text-xs">
-                    {submitting ? 'Encrypting...' : 'Submit Transaction'}
+                    {submitting ? 'Encrypting...' : 'Finalize Settlement'}
                   </button>
-                  <button onClick={() => setStep(1)} className="w-full text-slate-700 text-[10px] uppercase font-black tracking-widest hover:text-slate-400 transition-colors py-4">← Return to Gateway List</button>
+                  <button onClick={() => setStep(1)} className="w-full text-slate-700 text-[10px] uppercase font-black tracking-widest hover:text-slate-400 transition-colors py-4">← Change Gateway</button>
                 </div>
               </div>
             </div>
           </div>
         )}
       </main>
-      
-      <footer className="text-center mt-20 opacity-20 hover:opacity-100 transition-opacity">
-         <a href="#" className="inline-flex items-center gap-2 text-[10px] text-slate-500 uppercase font-black tracking-[0.2em]">
-            <svg className="w-3 h-3 font-black" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" /></svg>
-            End-to-End Encrypted Node
-         </a>
-      </footer>
     </div>
   )
 }
