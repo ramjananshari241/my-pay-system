@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
 
   const handleLogin = (e: any) => {
     e.preventDefault()
+    // 你可以在这里修改你的后台登录密码
     if (password === 'admin888') { 
       localStorage.setItem('admin_logged_in', 'true')
       setIsLoggedIn(true)
@@ -33,15 +34,15 @@ export default function AdminDashboardPage() {
       <div className="min-h-screen bg-slate-950 text-white p-10 flex flex-col items-center justify-center font-sans">
         <div className="max-w-5xl w-full text-center">
           <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.4em] mb-4">Central Command Center</p>
-          <h1 className="text-4xl font-black mb-12 tracking-tight italic uppercase">控制台首页</h1>
+          <h1 className="text-4xl font-black mb-12 tracking-tight italic uppercase">管理员控制台</h1>
           
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
               { title: '创建工单', desc: '录入信息并生成支付链接', link: '/admin/create-order', icon: '📝' },
-              { title: '订单管理', desc: '实时监控 / 审核 / 封禁IP', link: '/admin/orders', icon: '🔍' },
+              { title: '订单审核与管理', desc: '实时监控 / 审核放行 / 屏蔽IP', link: '/admin/orders', icon: '🔍' },
               { title: '收款码管理', desc: '修改名称 / 状态 / 重置次数', link: '/admin/qr-manager', icon: '⚙️' },
               { title: '添加收款码', desc: '上传新的二维码图片', link: '/admin/qr', icon: '➕' },
-              // --- 新增：员工管理模块 ---
+              // --- 下面是新增的两个模块 ---
               { title: '员工管理', desc: '配置客服员工库 (业绩关联)', link: '/admin/staff', icon: '👥' },
               { title: '业绩统计', desc: '查看本月客服流水报表', link: '/admin/performance', icon: '📊' }
             ].map((item, index) => (
@@ -50,7 +51,7 @@ export default function AdminDashboardPage() {
                 href={item.link}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-slate-900 p-8 rounded-[2rem] border border-slate-800 hover:border-indigo-500 hover:bg-slate-800 transition-all group text-left shadow-xl hover:shadow-indigo-500/10 cursor-pointer"
+                className="bg-slate-900/50 p-8 rounded-[2rem] border border-slate-800 hover:border-indigo-500 hover:bg-slate-800 transition-all group text-left shadow-xl hover:shadow-indigo-500/10 cursor-pointer"
               >
                 <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-500">{item.icon}</div>
                 <div className="text-xl font-bold mb-2 tracking-tight text-white">{item.title}</div>
@@ -59,7 +60,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          <button onClick={handleLogout} className="mt-20 text-slate-600 hover:text-white underline text-[10px] font-black uppercase tracking-widest transition-colors">Sign Out Security Session</button>
+          <button onClick={handleLogout} className="mt-20 text-slate-600 hover:text-white underline text-[10px] font-black uppercase tracking-widest transition-colors">退出安全登录</button>
         </div>
       </div>
     )
