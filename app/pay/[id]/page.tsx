@@ -5,9 +5,9 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/utils/supabase'
 
 const CHANNELS = [
-  { id: '集合1', name: '支付宝', icon: '💳', hint: '支持支付宝扫码，支付时请务必备注库存号。', dual: true },
-  { id: '集合2', name: '微信支付', icon: '💬', hint: '支持微信扫码，付款完成后请上传账单详情截图。', dual: true },
-  { id: '集合3', name: 'USDT (TRC20)', icon: '🌐', hint: '仅支持 TRC20 网络，请核对转账金额与工单一致。', dual: false }
+  { id: '集合1', name: '支付宝', icon: '💳', hint: '请使用支付宝扫码，转入正确金额，不要多也不要少。如当前通道支付受限（如风控、限制收款等）请点击上方按钮切换备用通道', dual: true },
+  { id: '集合2', name: '微信支付', icon: '💬', hint: '请扫码添加好友后转账，请不要向收款账号发送任何消息！如当前通道支付受限（如风控、限制收款等）请点击上方按钮切换备用通道', dual: true },
+  { id: '集合3', name: 'USDT (TRC20)', icon: '🌐', hint: '仅支持 TRC20 网络，请注意转账金额与工单一致。', dual: false }
 ]
 
 export default function ModernDarkPayPage() {
@@ -184,7 +184,7 @@ export default function ModernDarkPayPage() {
               </div>
 
               {currentChannel.dual && !useBackup && (
-                <button onClick={handleSwitchChannel} className="text-[10px] text-slate-500 hover:text-white transition-colors border border-slate-800 px-6 py-3 rounded-full mb-8 uppercase font-black tracking-[0.2em]">Cannot Pay? Switch Channel</button>
+                <button onClick={handleSwitchChannel} className="text-[10px] text-slate-500 hover:text-white transition-colors border border-slate-800 px-6 py-3 rounded-full mb-8 uppercase font-black tracking-[0.2em]">无法付款？点击此处切换到备用通道</button>
               )}
               {useBackup && <div className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">🛡️ Security Backup Enabled</div>}
 
@@ -204,7 +204,7 @@ export default function ModernDarkPayPage() {
                       ) : (
                          <>
                             <p className="text-3xl mb-3">📁</p>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Drop Payment Document</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">请点击此处上传支付截图</p>
                          </>
                       )}
                       <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onFileChange} />

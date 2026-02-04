@@ -222,12 +222,12 @@ export default function OrderManagementPage() {
                   <td className="p-5 text-center">
                     {o.status === 'remitted' ? (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-blue-600 font-black text-xs">已回款</span>
+                        <span className="text-blue-600 font-black text-xs">已回U</span>
                         <span className="text-[10px] font-mono font-black text-indigo-400 bg-indigo-50 px-2 rounded tracking-tighter">U {o.remit_amount || 0}</span>
                       </div>
                     ) : o.status === 'completed' ? (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-red-500 font-black text-xs underline decoration-2 underline-offset-4 animate-pulse">待汇款</span>
+                        <span className="text-red-500 font-black text-xs underline decoration-2 underline-offset-4 animate-pulse">待回U</span>
                         <span className="text-[9px] text-red-300 uppercase font-bold tracking-tighter italic">Pending</span>
                       </div>
                     ) : (
