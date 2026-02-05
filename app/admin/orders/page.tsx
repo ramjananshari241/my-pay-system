@@ -228,7 +228,7 @@ export default function OrderManagementPage() {
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
           <div className="flex bg-gray-100 p-1 rounded-xl overflow-x-auto max-w-full">
-            {[{ id: 'all', label: '全部' }, { id: 'pending', label: '待审核' }, { id: 'unremitted', label: '未汇款' }, { id: 'remitted', label: '已汇款' }, { id: 'unpaid', label: '未支付' }].map(t => (
+            {[{ id: 'all', label: '全部' }, { id: 'pending', label: '待审核' }, { id: 'unremitted', label: '未回U' }, { id: 'remitted', label: '已回U' }, { id: 'unpaid', label: '未支付' }].map(t => (
               <button key={t.id} onClick={() => setFilterType(t.id)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filterType === t.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}>{t.label}</button>
             ))}
           </div>
@@ -310,19 +310,19 @@ export default function OrderManagementPage() {
                        
                        {/* 审核/汇款按钮 */}
                        {o.status === 'pending_review' && (
-                        <button onClick={() => handleApprove(o.id)} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md shadow-emerald-100 hover:bg-emerald-600">审核</button>
+                        <button onClick={() => handleApprove(o.id)} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md shadow-emerald-100 hover:bg-emerald-600">通过审核</button>
                        )}
                        {o.status === 'completed' && (
-                        <button onClick={() => handleOpenRemitModal(o.id, o.price)} className="px-3 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-md shadow-blue-100 hover:bg-blue-700">汇款</button>
+                        <button onClick={() => handleOpenRemitModal(o.id, o.price)} className="px-3 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-md shadow-blue-100 hover:bg-blue-700">回U</button>
                        )}
 
                        {/* 支付凭证按钮 */}
                        {o.screenshot_url && (
-                        <button onClick={() => setViewingImage(o.screenshot_url)} className="p-2 px-3 border rounded-lg text-xs font-bold text-gray-500 hover:text-black hover:border-black transition-all bg-white italic underline">P.O.P</button>
+                        <button onClick={() => setViewingImage(o.screenshot_url)} className="p-2 px-3 border rounded-lg text-xs font-bold text-gray-500 hover:text-black hover:border-black transition-all bg-white italic underline">支付凭证</button>
                        )}
 
                        {/* 修改按钮 (新增) */}
-                       <button onClick={() => setEditModal({isOpen: true, order: o})} className="p-2 px-3 bg-gray-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">Edit</button>
+                       <button onClick={() => setEditModal({isOpen: true, order: o})} className="p-2 px-3 bg-gray-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">修改工单</button>
                     </div>
                   </td>
                 </tr>
