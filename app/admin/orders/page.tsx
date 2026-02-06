@@ -9,21 +9,16 @@ export default function OrderManagementPage() {
   const [filterType, setFilterType] = useState('all') 
   const [keyword, setKeyword] = useState('')
   
-  // 收款码相关
   const [qrMap, setQrMap] = useState<{[key: number]: string}>({})
-  const [allQrs, setAllQrs] = useState<any[]>([]) // 存储完整的QR对象用于下拉选单
+  const [allQrs, setAllQrs] = useState<any[]>([])
 
   const [notification, setNotification] = useState<string | null>(null)
   
-  // --- 弹窗状态 1：汇款确认 ---
+  // 弹窗状态
   const [remitModal, setRemitModal] = useState<{ isOpen: boolean, orderId: number | null, amount: string }>({
     isOpen: false, orderId: null, amount: ''
   })
-
-  // --- 弹窗状态 2：支付凭证预览 ---
   const [viewingImage, setViewingImage] = useState<string | null>(null)
-
-  // --- 弹窗状态 3：订单二次修改 (重点) ---
   const [editModal, setEditModal] = useState<{ isOpen: boolean, order: any }>({
     isOpen: false, order: null
   })
@@ -51,13 +46,9 @@ export default function OrderManagementPage() {
   const fetchOrders = async () => {
     setLoading(true)
     try {
-      // 获取收款码字典和全量列表
       const { data: qrData } = await supabase.from('qr_codes').select('id, name, group_name')
       if (qrData) {
-        const map: {[key: number]: string} = {}
-        qrData.forEach((q: any) => { map[q.id] = q.name })
-        setQrMap(map)
-        setAllQrs(qrData)
+        const map: {[key: number]: string} = {}; qrData.forEach((q: any) => { map[q.id] = q.name }); setQrMap(map); setAllQrs(qrData)
       }
 
       let query = supabase.from('orders').select('*').order('id', { ascending: false })
@@ -74,7 +65,7 @@ export default function OrderManagementPage() {
   }
 
   const handleApprove = async (id: number) => {
-    if (!confirm('确认该笔资金已安全入账并审核通过？')) return
+    if (!confirm('确认审核通过？')) return
     await supabase.from('orders').update({ status: 'completed' }).eq('id', id)
     fetchOrders()
   }
@@ -83,58 +74,60 @@ export default function OrderManagementPage() {
     setRemitModal({ isOpen: true, orderId: id, amount: defaultAmount.toString() })
   }
 
+  // --- 重点修改：汇款确认逻辑 (添加时间记录) ---
   const confirmRemit = async () => {
     if (!remitModal.orderId || !remitModal.amount) return
     setLoading(true)
-    const { error } = await supabase.from('orders').update({ status: 'remitted', remit_amount: parseFloat(remitModal.amount) }).eq('id', remitModal.orderId)
-    if (!error) {
-      setRemitModal({ isOpen: false, orderId: null, amount: '' })
-      fetchOrders()
-    }
+    const { error } = await supabase.from('orders').update({ 
+      status: 'remitted', 
+      remit_amount: parseFloat(remitModal.amount),
+      remitted_at: new Date().toISOString() // 记录当前系统时间
+    }).eq('id', remitModal.orderId)
+    
+    if (!error) { setRemitModal({ isOpen: false, orderId: null, amount: '' }); fetchOrders() }
     setLoading(false)
   }
 
-  // --- 核心：订单修改逻辑 ---
+  // --- 重点修改：编辑保存逻辑 (处理时间记录的增加或清空) ---
   const handleUpdateOrder = async () => {
     const { order } = editModal
     if (!order) return
     
     setLoading(true)
-    const { error } = await supabase.from('orders').update({
+    const updateData: any = {
       price: Number(order.price),
       status: order.status,
       actual_qr_id: Number(order.actual_qr_id),
       remit_amount: order.status === 'remitted' ? Number(order.remit_amount) : null
-    }).eq('id', order.id)
-
-    if (!error) {
-      setEditModal({ isOpen: false, order: null })
-      fetchOrders()
-    } else {
-      alert('更新失败')
     }
+
+    // 逻辑：如果状态改为已汇款且之前没存过时间，则存入；如果状态改回去了，则清空时间
+    if (order.status === 'remitted') {
+      if (!order.remitted_at) updateData.remitted_at = new Date().toISOString()
+    } else {
+      updateData.remitted_at = null
+    }
+
+    const { error } = await supabase.from('orders').update(updateData).eq('id', order.id)
+    if (!error) { setEditModal({ isOpen: false, order: null }); fetchOrders() }
     setLoading(false)
   }
 
   const handleCopyText = (o: any) => {
     const qrName = qrMap[o.actual_qr_id || o.primary_qr_id] || '未知'
     const text = `${o.order_no}，${qrName}，${o.price}`
-    navigator.clipboard.writeText(text)
-    alert('已复制：' + text)
+    navigator.clipboard.writeText(text); alert('已复制：' + text)
   }
 
   const handleBanIp = async (ip: string) => {
-    if (ip && confirm(`屏蔽 IP: ${ip}？`)) {
-      await supabase.from('blacklisted_ips').insert([{ ip }])
-      alert('已封禁')
-    }
+    if (ip && confirm(`屏蔽 IP: ${ip}？`)) { await supabase.from('blacklisted_ips').insert([{ ip }]); alert('已封禁') }
   }
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen text-gray-800 font-sans relative">
       <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2864/2864-preview.mp3" />
       
-      {/* 支付凭证悬浮窗 */}
+      {/* 凭证预览 */}
       {viewingImage && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setViewingImage(null)}>
           <div className="relative max-w-5xl w-full h-full flex items-center justify-center">
@@ -144,38 +137,31 @@ export default function OrderManagementPage() {
         </div>
       )}
 
-      {/* 修改订单弹窗 (重点) */}
+      {/* 编辑弹窗 */}
       {editModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 text-slate-900">
             <div className="flex justify-between items-start mb-6">
-               <h3 className="text-xl font-black italic">EDIT ORDER / 修改工单</h3>
-               <button onClick={()=>setEditModal({isOpen:false, order:null})} className="text-gray-400">✕</button>
+               <h3 className="text-xl font-black italic uppercase">Edit Ticket</h3>
+               <button onClick={()=>setEditModal({isOpen:false, order:null})} className="text-gray-400 font-bold">✕</button>
             </div>
-            
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Order Amount / 订单金额 (¥)</label>
                 <input type="number" className="w-full border-2 border-gray-100 p-3 rounded-xl outline-none focus:border-indigo-500 font-bold" value={editModal.order.price} onChange={(e)=>setEditModal({...editModal, order:{...editModal.order, price: e.target.value}})} />
               </div>
-
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Payment Gateway / 收款通道</label>
                 <select className="w-full border-2 border-gray-100 p-3 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 font-bold" value={editModal.order.actual_qr_id || editModal.order.primary_qr_id} onChange={(e)=>setEditModal({...editModal, order:{...editModal.order, actual_qr_id: e.target.value}})}>
                   {allQrs.map(qr => <option key={qr.id} value={qr.id}>{qr.name} ({qr.group_name})</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Status / 汇款状态</label>
                 <select className="w-full border-2 border-gray-100 p-3 rounded-xl outline-none focus:border-indigo-500 bg-gray-50 font-bold" value={editModal.order.status} onChange={(e)=>setEditModal({...editModal, order:{...editModal.order, status: e.target.value}})}>
-                  <option value="pending">待支付</option>
-                  <option value="pending_review">待审核</option>
-                  <option value="completed">审核通过 (待汇款)</option>
-                  <option value="remitted">已汇款</option>
+                  <option value="pending">待支付</option><option value="pending_review">待审核</option><option value="completed">审核通过 (待汇款)</option><option value="remitted">已汇款</option>
                 </select>
               </div>
-
               {editModal.order.status === 'remitted' && (
                 <div className="animate-in slide-in-from-top-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Remit Amount / 汇出金额 (U)</label>
@@ -183,20 +169,17 @@ export default function OrderManagementPage() {
                 </div>
               )}
             </div>
-
-            <div className="flex gap-3 mt-8">
-              <button onClick={handleUpdateOrder} className="w-full py-4 rounded-2xl font-black bg-black text-white shadow-xl hover:bg-gray-800 transition-all active:scale-95">保存修改</button>
-            </div>
+            <button onClick={handleUpdateOrder} className="w-full py-4 rounded-2xl font-black bg-black text-white shadow-xl mt-8 transition-all active:scale-95">保存修改</button>
           </div>
         </div>
       )}
 
-      {/* 汇款确认弹窗 */}
+      {/* 确认汇款弹窗 */}
       {remitModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-xl font-black mb-2 italic tracking-tighter">CONFIRM REMITTANCE</h3>
-            <p className="text-gray-500 text-[10px] mb-6 uppercase tracking-[0.2em] font-black opacity-60">输入实际汇出金额 (USDT)</p>
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-slate-900">
+            <h3 className="text-xl font-black mb-2 italic tracking-tighter uppercase">Confirm Remittance</h3>
+            <p className="text-gray-500 text-[10px] mb-6 uppercase tracking-[0.2em] font-black opacity-60 italic">系统将自动记录当前汇款时间</p>
             <div className="relative mb-8">
               <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-500 text-xl">U</span>
               <input autoFocus type="number" step="0.01" className="w-full border-b-4 border-gray-100 focus:border-indigo-500 bg-transparent p-4 pr-12 outline-none font-mono text-4xl font-black transition-all tabular-nums" value={remitModal.amount} onChange={(e) => setRemitModal({...remitModal, amount: e.target.value})} />
@@ -209,17 +192,9 @@ export default function OrderManagementPage() {
         </div>
       )}
 
-      {/* 消息通知 */}
-      {notification && (
-        <div className="fixed top-5 right-5 bg-white text-gray-900 p-6 rounded-xl shadow-2xl border-l-8 border-orange-500 animate-bounce z-50 flex items-center gap-6 max-w-md text-gray-900">
-          <div className="flex-1 font-bold">新工单待处理！<p className="text-sm font-normal">{notification}</p></div>
-          <button onClick={handleCloseNotification} className="bg-black text-white px-4 py-2 rounded-lg text-xs font-bold">停止提醒</button>
-        </div>
-      )}
-
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-end mb-8 text-slate-900">
-          <div><h1 className="text-3xl font-black italic uppercase tracking-tighter">ORDER MANAGEMENT / 工单监控</h1></div>
+          <div><h1 className="text-3xl font-black italic uppercase tracking-tighter">Order Hub / 工单监控</h1></div>
           <div className="flex gap-3">
              <a href="/admin/performance" target="_blank" className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200">📊 客服业绩统计</a>
              <button onClick={() => fetchOrders()} className="bg-white border border-gray-200 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 font-mono italic">REFRESH</button>
@@ -228,7 +203,7 @@ export default function OrderManagementPage() {
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
           <div className="flex bg-gray-100 p-1 rounded-xl overflow-x-auto max-w-full">
-            {[{ id: 'all', label: '全部' }, { id: 'pending', label: '待审核' }, { id: 'unremitted', label: '未回U' }, { id: 'remitted', label: '已回U' }, { id: 'unpaid', label: '未支付' }].map(t => (
+            {[{ id: 'all', label: '全部' }, { id: 'pending', label: '待审核' }, { id: 'unremitted', label: '未汇款' }, { id: 'remitted', label: '已汇款' }, { id: 'unpaid', label: '未支付' }].map(t => (
               <button key={t.id} onClick={() => setFilterType(t.id)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filterType === t.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}>{t.label}</button>
             ))}
           </div>
@@ -242,87 +217,45 @@ export default function OrderManagementPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50/50 border-b text-[10px] font-black text-gray-400 uppercase tracking-widest font-mono">
               <tr>
-                <th className="p-5">Order Detail</th>
-                <th className="p-5">Agent</th>
-                <th className="p-5">Amount</th>
-                <th className="p-5">Gateway</th>
-                <th className="p-5 text-center font-mono tracking-tighter">IP & Timestamp</th>
+                <th className="p-5">Order Info</th><th className="p-5">Agent</th><th className="p-5">Amount</th><th className="p-5">Gateway</th>
+                <th className="p-5 text-center">IP & Created</th>
                 <th className="p-5 text-center">Status</th>
-                <th className="p-5 text-center">Remittance</th>
+                <th className="p-5 text-center">Remittance Info</th> {/* 修改了表头 */}
                 <th className="p-5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {orders.map(o => (
                 <tr key={o.id} className="hover:bg-blue-50/30 transition-colors">
-                  <td className="p-5 font-mono font-bold text-gray-800">{o.order_no}</td>
-                  <td className="p-5"><span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600">{o.creator_name || '-'}</span></td>
-                  <td className="p-5">
-                    <div className="font-black text-gray-900 text-lg">¥{o.price}</div>
-                    <div className="text-[10px] text-gray-400 font-mono">#{o.stock_id}</div>
-                  </td>
-                  <td className="p-5">
-                    {o.is_paid ? (
-                      <span className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[10px] font-black border border-indigo-100">
-                        {qrMap[o.actual_qr_id || o.primary_qr_id] || 'N/A'}
-                      </span>
-                    ) : <span className="text-gray-300">-</span>}
-                  </td>
-                  <td className="p-5">
-                    <div className="text-[10px] text-gray-400 font-mono mb-1">{new Date(o.created_at).toLocaleString()}</div>
-                    <div className="flex items-center gap-1">
-                       <span className="text-[10px] text-gray-500">{o.ip_address || '-'}</span>
-                       {o.ip_address && <button onClick={() => handleBanIp(o.ip_address)} className="text-[10px] opacity-30 hover:opacity-100 transition-opacity">🚫</button>}
-                    </div>
-                  </td>
-                  <td className="p-5 text-center">
-                    {o.is_paid ? (
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                        o.status === 'remitted' ? 'bg-blue-50 text-blue-400 border-blue-100' : 
-                        o.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 
-                        'bg-orange-100 text-orange-600 animate-pulse border-orange-200'
-                      }`}>
-                        {o.status === 'remitted' ? 'REMITTED' : o.status === 'completed' ? 'SUCCESS' : 'WAITING'}
-                      </span>
-                    ) : <span className="text-gray-300 text-[10px] font-bold uppercase tracking-widest">待支付</span>}
-                  </td>
+                  <td className="p-5 font-mono font-bold text-gray-800 text-xs">{o.order_no}</td>
+                  <td className="p-5 font-bold text-gray-500 text-[10px] uppercase tracking-tighter">{o.creator_name || '-'}</td>
+                  <td className="p-5"><div className="font-black text-gray-900 text-base">¥{o.price}</div><div className="text-[10px] text-gray-400 font-mono tracking-tighter">#{o.stock_id}</div></td>
+                  <td className="p-5"><span className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[10px] font-black border border-indigo-100">{qrMap[o.actual_qr_id || o.primary_qr_id] || 'N/A'}</span></td>
+                  <td className="p-5 text-center"><div className="text-[10px] text-gray-400 font-mono mb-1">{new Date(o.created_at).toLocaleString()}</div><div className="flex items-center justify-center gap-1"><span className="text-[10px] text-gray-500">{o.ip_address || '-'}</span>{o.ip_address && <button onClick={() => handleBanIp(o.ip_address)} className="text-[10px] opacity-30 hover:opacity-100">🚫</button>}</div></td>
+                  <td className="p-5 text-center">{o.is_paid ? <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${o.status === 'remitted' ? 'bg-blue-50 text-blue-400 border-blue-100' : o.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-orange-100 text-orange-600 animate-pulse border-orange-200'}`}>{o.status === 'remitted' ? 'REMITTED' : o.status === 'completed' ? 'SUCCESS' : 'WAITING'}</span> : <span className="text-gray-300 text-[10px] font-bold uppercase tracking-widest">WAITING</span>}</td>
 
+                  {/* --- 重点：汇款信息展示 (状态 + 金额 + 时间) --- */}
                   <td className="p-5 text-center">
                     {o.status === 'remitted' ? (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-blue-600 font-black text-xs">已回U</span>
-                        <span className="text-[10px] font-mono font-black text-indigo-400 bg-indigo-50 px-2 rounded tracking-tighter">U {o.remit_amount || 0}</span>
+                        <span className="text-blue-600 font-black text-xs">已回款</span>
+                        <div className="flex items-center gap-2">
+                           <span className="text-[10px] font-mono font-black text-indigo-400 bg-indigo-50 px-2 rounded tracking-tighter">U {o.remit_amount || 0}</span>
+                           <span className="text-[9px] text-gray-400 font-mono" title="汇款精确时间">{new Date(o.remitted_at).toLocaleTimeString()}</span>
+                        </div>
                       </div>
                     ) : o.status === 'completed' ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-red-500 font-black text-xs underline decoration-2 underline-offset-4 animate-pulse">待回U</span>
-                        <span className="text-[9px] text-red-300 uppercase font-bold tracking-tighter italic tracking-tight">Pending</span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-200 text-lg">/</span>
-                    )}
+                      <div className="flex flex-col items-center gap-1"><span className="text-red-500 font-black text-xs underline decoration-2 underline-offset-4 animate-pulse">待汇款</span><span className="text-[9px] text-red-300 uppercase font-bold tracking-tighter italic">Pending</span></div>
+                    ) : <span className="text-gray-200">/</span>}
                   </td>
 
                   <td className="p-5 text-right">
                     <div className="flex justify-end gap-2 items-center">
-                       {/* 复制按钮 */}
-                       <button onClick={() => handleCopyText(o)} className="p-2 border rounded-lg hover:bg-gray-50" title="复制工单信息">📋</button>
-                       
-                       {/* 审核/汇款按钮 */}
-                       {o.status === 'pending_review' && (
-                        <button onClick={() => handleApprove(o.id)} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md shadow-emerald-100 hover:bg-emerald-600">通过审核</button>
-                       )}
-                       {o.status === 'completed' && (
-                        <button onClick={() => handleOpenRemitModal(o.id, o.price)} className="px-3 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-md shadow-blue-100 hover:bg-blue-700">回U</button>
-                       )}
-
-                       {/* 支付凭证按钮 */}
-                       {o.screenshot_url && (
-                        <button onClick={() => setViewingImage(o.screenshot_url)} className="p-2 px-3 border rounded-lg text-xs font-bold text-gray-500 hover:text-black hover:border-black transition-all bg-white italic underline">支付凭证</button>
-                       )}
-
-                       {/* 修改按钮 (新增) */}
-                       <button onClick={() => setEditModal({isOpen: true, order: o})} className="p-2 px-3 bg-gray-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">修改工单</button>
+                       <button onClick={() => handleCopyText(o)} className="p-2 border rounded-lg hover:bg-gray-50" title="复制信息">📋</button>
+                       {o.status === 'pending_review' && <button onClick={() => handleApprove(o.id)} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md">审核</button>}
+                       {o.status === 'completed' && <button onClick={() => handleOpenRemitModal(o.id, o.price)} className="px-3 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-md">汇款</button>}
+                       {o.screenshot_url && <button onClick={() => setViewingImage(o.screenshot_url)} className="p-2 px-3 border rounded-lg text-xs font-bold text-gray-500 hover:text-black transition-all bg-white italic underline">P.O.P</button>}
+                       <button onClick={() => setEditModal({isOpen: true, order: o})} className="p-2 px-3 bg-gray-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">Edit</button>
                     </div>
                   </td>
                 </tr>
