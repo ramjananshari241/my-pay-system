@@ -74,21 +74,19 @@ export default function OrderManagementPage() {
     setRemitModal({ isOpen: true, orderId: id, amount: defaultAmount.toString() })
   }
 
-  // --- 重点修改：汇款确认逻辑 (添加时间记录) ---
   const confirmRemit = async () => {
     if (!remitModal.orderId || !remitModal.amount) return
     setLoading(true)
     const { error } = await supabase.from('orders').update({ 
       status: 'remitted', 
       remit_amount: parseFloat(remitModal.amount),
-      remitted_at: new Date().toISOString() // 记录当前系统时间
+      remitted_at: new Date().toISOString() 
     }).eq('id', remitModal.orderId)
     
     if (!error) { setRemitModal({ isOpen: false, orderId: null, amount: '' }); fetchOrders() }
     setLoading(false)
   }
 
-  // --- 重点修改：编辑保存逻辑 (处理时间记录的增加或清空) ---
   const handleUpdateOrder = async () => {
     const { order } = editModal
     if (!order) return
@@ -101,7 +99,6 @@ export default function OrderManagementPage() {
       remit_amount: order.status === 'remitted' ? Number(order.remit_amount) : null
     }
 
-    // 逻辑：如果状态改为已汇款且之前没存过时间，则存入；如果状态改回去了，则清空时间
     if (order.status === 'remitted') {
       if (!order.remitted_at) updateData.remitted_at = new Date().toISOString()
     } else {
@@ -179,7 +176,7 @@ export default function OrderManagementPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-slate-900">
             <h3 className="text-xl font-black mb-2 italic tracking-tighter uppercase">Confirm Remittance</h3>
-            <p className="text-gray-500 text-[10px] mb-6 uppercase tracking-[0.2em] font-black opacity-60 italic">系统将自动记录当前汇款时间</p>
+            <p className="text-gray-500 text-[10px] mb-6 uppercase tracking-[0.2em] font-black opacity-60 italic">系统将自动记录当前汇款日期和时间</p>
             <div className="relative mb-8">
               <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-500 text-xl">U</span>
               <input autoFocus type="number" step="0.01" className="w-full border-b-4 border-gray-100 focus:border-indigo-500 bg-transparent p-4 pr-12 outline-none font-mono text-4xl font-black transition-all tabular-nums" value={remitModal.amount} onChange={(e) => setRemitModal({...remitModal, amount: e.target.value})} />
@@ -189,6 +186,14 @@ export default function OrderManagementPage() {
               <button onClick={confirmRemit} className="flex-1 py-4 rounded-2xl font-black bg-indigo-600 text-white shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 text-xs uppercase tracking-widest">Confirm</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 消息通知 */}
+      {notification && (
+        <div className="fixed top-5 right-5 bg-white text-gray-900 p-6 rounded-xl shadow-2xl border-l-8 border-orange-500 animate-bounce z-50 flex items-center gap-6 max-w-md text-gray-900">
+          <div className="flex-1 font-bold">新工单待处理！<p className="text-sm font-normal">{notification}</p></div>
+          <button onClick={handleCloseNotification} className="bg-black text-white px-4 py-2 rounded-lg text-xs font-bold">停止提醒</button>
         </div>
       )}
 
@@ -220,7 +225,7 @@ export default function OrderManagementPage() {
                 <th className="p-5">Order Info</th><th className="p-5">Agent</th><th className="p-5">Amount</th><th className="p-5">Gateway</th>
                 <th className="p-5 text-center">IP & Created</th>
                 <th className="p-5 text-center">Status</th>
-                <th className="p-5 text-center">Remittance Info</th> {/* 修改了表头 */}
+                <th className="p-5 text-center">Remittance Info</th>
                 <th className="p-5 text-right">Action</th>
               </tr>
             </thead>
@@ -234,14 +239,17 @@ export default function OrderManagementPage() {
                   <td className="p-5 text-center"><div className="text-[10px] text-gray-400 font-mono mb-1">{new Date(o.created_at).toLocaleString()}</div><div className="flex items-center justify-center gap-1"><span className="text-[10px] text-gray-500">{o.ip_address || '-'}</span>{o.ip_address && <button onClick={() => handleBanIp(o.ip_address)} className="text-[10px] opacity-30 hover:opacity-100">🚫</button>}</div></td>
                   <td className="p-5 text-center">{o.is_paid ? <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${o.status === 'remitted' ? 'bg-blue-50 text-blue-400 border-blue-100' : o.status === 'completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-orange-100 text-orange-600 animate-pulse border-orange-200'}`}>{o.status === 'remitted' ? 'REMITTED' : o.status === 'completed' ? 'SUCCESS' : 'WAITING'}</span> : <span className="text-gray-300 text-[10px] font-bold uppercase tracking-widest">WAITING</span>}</td>
 
-                  {/* --- 重点：汇款信息展示 (状态 + 金额 + 时间) --- */}
+                  {/* --- 重点修改：显示具体日期和时间 --- */}
                   <td className="p-5 text-center">
                     {o.status === 'remitted' ? (
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-blue-600 font-black text-xs">已回款</span>
-                        <div className="flex items-center gap-2">
-                           <span className="text-[10px] font-mono font-black text-indigo-400 bg-indigo-50 px-2 rounded tracking-tighter">U {o.remit_amount || 0}</span>
-                           <span className="text-[9px] text-gray-400 font-mono" title="汇款精确时间">{new Date(o.remitted_at).toLocaleTimeString()}</span>
+                        <div className="flex flex-col items-center">
+                           <span className="text-[10px] font-mono font-black text-indigo-400 bg-indigo-50 px-2 rounded tracking-tighter mb-1">U {o.remit_amount || 0}</span>
+                           <span className="text-[9px] text-gray-400 font-mono leading-tight">
+                             {new Date(o.remitted_at).toLocaleDateString()}<br/>
+                             {new Date(o.remitted_at).toLocaleTimeString()}
+                           </span>
                         </div>
                       </div>
                     ) : o.status === 'completed' ? (
