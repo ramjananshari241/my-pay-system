@@ -208,7 +208,7 @@ export default function OrderManagementPage() {
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
           <div className="flex bg-gray-100 p-1 rounded-xl overflow-x-auto max-w-full">
-            {[{ id: 'all', label: '全部' }, { id: 'pending', label: '待审核' }, { id: 'unremitted', label: '未汇款' }, { id: 'remitted', label: '已汇款' }, { id: 'unpaid', label: '未支付' }].map(t => (
+            {[{ id: 'all', label: '全部' }, { id: 'pending', label: '待审核' }, { id: 'unremitted', label: '未回U' }, { id: 'remitted', label: '已回U' }, { id: 'unpaid', label: '未支付' }].map(t => (
               <button key={t.id} onClick={() => setFilterType(t.id)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filterType === t.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}>{t.label}</button>
             ))}
           </div>
@@ -253,7 +253,7 @@ export default function OrderManagementPage() {
                         </div>
                       </div>
                     ) : o.status === 'completed' ? (
-                      <div className="flex flex-col items-center gap-1"><span className="text-red-500 font-black text-xs underline decoration-2 underline-offset-4 animate-pulse">待汇款</span><span className="text-[9px] text-red-300 uppercase font-bold tracking-tighter italic">Pending</span></div>
+                      <div className="flex flex-col items-center gap-1"><span className="text-red-500 font-black text-xs underline decoration-2 underline-offset-4 animate-pulse">待回U</span><span className="text-[9px] text-red-300 uppercase font-bold tracking-tighter italic">Pending</span></div>
                     ) : <span className="text-gray-200">/</span>}
                   </td>
 
