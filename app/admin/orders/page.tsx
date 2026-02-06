@@ -243,9 +243,9 @@ export default function OrderManagementPage() {
                   <td className="p-5 text-center">
                     {o.status === 'remitted' ? (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-blue-600 font-black text-xs">已回款</span>
+                        <span className="text-blue-600 font-black text-xs">已回U</span>
                         <div className="flex flex-col items-center">
-                           <span className="text-[10px] font-mono font-black text-indigo-400 bg-indigo-50 px-2 rounded tracking-tighter mb-1">U {o.remit_amount || 0}</span>
+                           <span className="text-[10px] font-mono font-black text-Uindigo-400 bg-indigo-50 px-2 rounded tracking-tighter mb-1">U {o.remit_amount || 0}</span>
                            <span className="text-[9px] text-gray-400 font-mono leading-tight">
                              {new Date(o.remitted_at).toLocaleDateString()}<br/>
                              {new Date(o.remitted_at).toLocaleTimeString()}
