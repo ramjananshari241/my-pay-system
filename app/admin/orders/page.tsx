@@ -284,7 +284,7 @@ export default function OrderManagementPage() {
                       }`}>
                         {o.status === 'remitted' ? 'REMITTED' : o.status === 'completed' ? 'SUCCESS' : 'WAITING'}
                       </span>
-                    ) : <span className="text-gray-300 text-[10px] font-bold uppercase tracking-widest">WAITING</span>}
+                    ) : <span className="text-gray-300 text-[10px] font-bold uppercase tracking-widest">待支付</span>}
                   </td>
 
                   <td className="p-5 text-center">
