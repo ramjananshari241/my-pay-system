@@ -89,7 +89,7 @@ export default function StablePayPage() {
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
-  // --- 修复点 1: 选渠道时只更新本地状态，不写数据库 ---
+  // --- 优化后的渠道选择逻辑：负载均衡 + 随机池 ---
   const handleSelectChannel = async (channel: any) => {
     setLoading(true)
     try {
@@ -101,11 +101,24 @@ export default function StablePayPage() {
         return alert('该支付通道正如火如荼，请稍后重试或选择其他方式')
       }
 
-      // 排序：优先选最久没用的
-      available.sort((a, b) => (new Date(a.last_selected_at || 0).getTime()) - (new Date(b.last_selected_at || 0).getTime()))
-      
-      const pQr = available[0]
-      const bQr = channel.dual ? available[1] : null
+      // 1. 负载均衡：先按“今日单量”从小到大排序
+      available.sort((a, b) => a.today_usage - b.today_usage)
+
+      // 2. 建立优选池：取前 4 张 (或者全部，如果少于4张)
+      const poolSize = Math.max(2, Math.min(available.length, 4))
+      const candidatePool = available.slice(0, poolSize)
+
+      // 3. 随机洗牌：打乱优选池顺序，防止并发命中同一个
+      candidatePool.sort(() => 0.5 - Math.random())
+
+      // 4. 确定主码
+      const pQr = candidatePool[0]
+
+      // 5. 确定备用码 (从剩余所有可用码中随机选，不能是主码)
+      const remainingForBackup = available.filter(q => q.id !== pQr.id)
+      const bQr = channel.dual && remainingForBackup.length > 0
+        ? remainingForBackup[Math.floor(Math.random() * remainingForBackup.length)]
+        : null
 
       // 只更新本地 React 状态
       setQrDisplay({ primary: pQr, backup: bQr })
@@ -113,7 +126,7 @@ export default function StablePayPage() {
       setStep(2)
       setShowHintModal(true)
       
-      // 清空之前的残留输入（如果有）
+      // 清空之前的残留输入
       setFile(null)
       setPreviewUrl(null)
       setCaptchaInput('')
@@ -129,7 +142,7 @@ export default function StablePayPage() {
     // 这里也不要写数据库，只在前端切换显示
   }
 
-  // --- 修复点 2: 处理“返回”逻辑 ---
+  // --- 处理“返回”逻辑 ---
   const handleBack = () => {
     setStep(1)
     setFile(null)
@@ -138,7 +151,7 @@ export default function StablePayPage() {
     // 不操作数据库，保持纯净
   }
 
-  // --- 修复点 3: 提交时一次性写入所有数据 (原子操作) ---
+  // --- 提交时一次性写入所有数据 ---
   const handleSubmit = async () => {
     if (submitting) return
     if (parseInt(captchaInput) !== captcha.a) return alert('验证码错误')
@@ -148,7 +161,6 @@ export default function StablePayPage() {
     try {
       // 1. 上传图片
       const ext = file.name.split('.').pop()
-      // 使用强随机文件名，防止冲突
       const fileName = `pay_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
       
       const { error: upError } = await supabase.storage.from('images').upload(fileName, file)
@@ -159,8 +171,7 @@ export default function StablePayPage() {
       // 2. 确定最终使用的二维码
       const finalQr = useBackup ? qrDisplay.backup : qrDisplay.primary
       
-      // 3. 此时才更新数据库 (关键步骤)
-      // 更新订单信息
+      // 3. 更新订单信息
       const { error: dbError } = await supabase.from('orders').update({
         ip_address: clientIp, 
         screenshot_url: publicUrl, 
