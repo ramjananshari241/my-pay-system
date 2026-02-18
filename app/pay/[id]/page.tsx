@@ -155,7 +155,7 @@ export default function StablePayPage() {
   const handleSubmit = async () => {
     if (submitting) return
     if (parseInt(captchaInput) !== captcha.a) return alert('验证码错误')
-    if (!file) return alert('请上传凭证')
+    if (!file) return alert('请上传付款截图')
     
     setSubmitting(true)
     try {
