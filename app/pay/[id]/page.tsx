@@ -16,19 +16,19 @@ const CHANNELS = [
   { 
     id: '集合1', 
     name: '支付宝 (Alipay)', 
-    hint: '请使用支付宝扫码支付。支付时务必在备注中填写下方的【库存编号】。', 
+    hint: '平台采用第三方资金代收，当前通道为支付宝通道，请向小荷包内转入正确金额并截图上传到当前页面支付凭证区域，如当前通道受限，请切换备用通道或更换其他支付方式。', 
     dual: true 
   },
   { 
     id: '集合2', 
     name: '微信支付 (WeChat)', 
-    hint: '请保存二维码后打开微信扫码。支付完成后请务必上传【账单详情】页面截图。', 
+    hint: '平台采用第三方资金代收，当前通道为微信通道，请使用微信扫码添加好友并转账并截图上传到当前页面支付凭证区域，请勿向收款账号发送任何信息，如当前通道受限，请切换备用通道或更换其他支付方式。', 
     dual: true 
   },
   { 
     id: '集合3', 
     name: 'USDT (TRC20)', 
-    hint: '当前仅支持 TRC20 网络转账。转账金额需与工单显示金额完全一致。', 
+    hint: '当前仅支持 TRC20 网络转账。转账金额需与工单显示金额完全一致，转账后请立即截图并上传到当前页面支付凭证区域。', 
     dual: false 
   }
 ]
@@ -201,13 +201,13 @@ export default function StablePayPage() {
 
   const SummaryCard = () => (
     <div className="bg-white rounded-[2rem] border border-gray-100 p-8 mb-4 text-center shadow-sm relative overflow-hidden">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-2">ORDER SUMMARY</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-2">支付金额</p>
         <div className="flex items-baseline justify-center mb-3">
             <span className="text-xl mr-2 text-gray-300 font-light">¥</span>
             <span className="text-5xl font-semibold tracking-tight tabular-nums text-gray-900">{order?.price?.toFixed(2)}</span>
         </div>
         <div className="inline-block bg-gray-50 px-4 py-1.5 rounded-full border border-gray-100">
-            <span className="text-[10px] font-mono font-bold text-gray-500 tracking-wider uppercase">Business ID: {order?.stock_id || '-'}</span>
+            <span className="text-[10px] font-mono font-bold text-gray-500 tracking-wider uppercase">作品 ID: {order?.stock_id || '-'}</span>
         </div>
     </div>
   )
@@ -240,10 +240,10 @@ export default function StablePayPage() {
       {showHintModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl animate-in fade-in zoom-in border border-gray-100 text-center">
-            <div className="text-2xl mb-4 text-emerald-500">🛡️</div>
-            <h3 className="text-lg font-bold mb-4 text-gray-900 uppercase tracking-tighter">Secure Instructions</h3>
+            <div className="text-2xl mb-4 text-emerald-500">付款说明</div>
+            <h3 className="text-lg font-bold mb-4 text-gray-900 uppercase tracking-tighter">请勿刷新或关闭当前页面 ! 付款后请上传支付截图并点击提交</h3>
             <p className="text-gray-500 text-sm leading-relaxed mb-10 font-medium">{currentChannel?.hint}</p>
-            <button onClick={() => setShowHintModal(false)} className="w-full bg-black text-white font-bold py-4 rounded-2xl hover:opacity-80 active:scale-95 transition-all uppercase tracking-widest text-xs">Acknowledge</button>
+            <button onClick={() => setShowHintModal(false)} className="w-full bg-black text-white font-bold py-4 rounded-2xl hover:opacity-80 active:scale-95 transition-all uppercase tracking-widest text-xs">我已了解</button>
           </div>
         </div>
       )}
@@ -310,8 +310,8 @@ export default function StablePayPage() {
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 animate-pulse text-red-500">
-                                <span className="text-lg">📷</span>
-                                <span className="text-[11px] font-black uppercase tracking-tighter">请务必点击此处：上传支付成功截图</span>
+                                <span className="text-lg"></span>
+                                <span className="text-[11px] font-black uppercase tracking-tighter">点击上传付款截图</span>
                             </div>
                         )}
                         <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} />
@@ -328,10 +328,10 @@ export default function StablePayPage() {
                     </div>
                 </div>
                 <button onClick={handleSubmit} disabled={submitting} className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl shadow-black/5 ${submitting ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-black text-white hover:opacity-80 active:scale-[0.98]'}`}>
-                  {submitting ? 'PROCESSING...' : 'Confirm & Dispatch'}
+                  {submitting ? 'PROCESSING...' : '已支付，提交订单'}
                 </button>
                 {/* 修复返回按钮逻辑 */}
-                <button onClick={handleBack} className="w-full text-center text-[9px] text-gray-400 font-bold uppercase tracking-widest hover:text-black py-2 transition-colors font-mono">← Return to selection</button>
+                <button onClick={handleBack} className="w-full text-center text-[9px] text-gray-400 font-bold uppercase tracking-widest hover:text-black py-2 transition-colors font-mono">← 返回上一步</button>
               </div>
             </div>
           </div>
@@ -357,7 +357,7 @@ export default function StablePayPage() {
       <footer className="max-w-md mx-auto px-4 mt-24 text-center">
          <a href="/safe" target="_blank" className="inline-flex items-center gap-2 text-[9px] text-gray-400 hover:text-black font-bold uppercase tracking-widest transition-all duration-300">
             <svg className="w-3.5 h-3.5 fill-gray-400 hover:fill-black transition-colors" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" /></svg>
-            <span>安全支付系统 | 资金第三方托管监控中</span>
+            <span>AntPal安全支付 | 交易监控中</span>
          </a>
       </footer>
     </div>
