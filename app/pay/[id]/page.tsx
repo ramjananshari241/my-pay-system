@@ -341,10 +341,10 @@ export default function StablePayPage() {
         {step === 3 && (
           <div className="animate-in zoom-in-95 duration-700 flex flex-col items-center py-10 text-center">
             <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mb-8 shadow-2xl border border-gray-800"><span className="text-4xl text-white">✓</span></div>
-            <h2 className="text-2xl font-black mb-3 tracking-tighter text-gray-900 uppercase italic">Dispatch Success</h2>
-            <p className="text-gray-400 text-sm mb-12 px-8 leading-relaxed font-medium">工单已进入审核序列，请保存单号耐心等待处理。</p>
+            <h2 className="text-2xl font-black mb-3 tracking-tighter text-gray-900 uppercase italic">提交成功请回到客服聊天窗口获取库存链接</h2>
+            <p className="text-gray-400 text-sm mb-12 px-8 leading-relaxed font-medium">客服审核中，请耐心等待1-3分钟</p>
             <div className="w-full bg-white border border-gray-100 p-10 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-               <p className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em] mb-4">Tracking Number</p>
+               <p className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em] mb-4">请保存您的订单编号</p>
                <div className="text-2xl font-mono font-black text-black tracking-tighter select-all border-b border-gray-50 pb-6 mb-8">{order?.order_no}</div>
                <div className="flex justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest font-mono"><span>STATUS: AWAITING</span><span>ID: #{order?.id}</span></div>
             </div>
@@ -355,7 +355,7 @@ export default function StablePayPage() {
       </main>
 
       <footer className="max-w-md mx-auto px-4 mt-24 text-center">
-         <a href="/safe" target="_blank" className="inline-flex items-center gap-2 text-[9px] text-gray-400 hover:text-black font-bold uppercase tracking-widest transition-all duration-300">
+         <a href="https://www.antpal.org/" target="_blank" className="inline-flex items-center gap-2 text-[9px] text-gray-400 hover:text-black font-bold uppercase tracking-widest transition-all duration-300">
             <svg className="w-3.5 h-3.5 fill-gray-400 hover:fill-black transition-colors" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" /></svg>
             <span>AntPal安全支付 | 交易监控中</span>
          </a>
